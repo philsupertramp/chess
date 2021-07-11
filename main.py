@@ -139,9 +139,9 @@ if __name__ == '__main__':
 
             if event.type == pygame.WINDOWSIZECHANGED:
                 canvas = pygame.Surface((screen.get_width(), screen.get_height() - 20))
+                rescale_images(canvas)
                 board.canvas = canvas
                 board.init_empty_field()
-                rescale_images(board.empty_board)
 
             if not is_mouse_clicked:
                 if event.type == pygame.MOUSEBUTTONDOWN:

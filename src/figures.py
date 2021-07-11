@@ -21,24 +21,31 @@ def scale_figure(figure: pygame.Surface, canvas: pygame.Surface):
     return pygame.transform.scale(figure, ratio)
 
 
-figures = {
-    FieldType.QUEEN | FieldType.BLACK: pygame.image.load('resources/king.png').convert_alpha(),
-    FieldType.KING | FieldType.BLACK: pygame.image.load('resources/queen.png').convert_alpha(),
-    FieldType.ROOK | FieldType.BLACK: pygame.image.load('resources/rook.png').convert_alpha(),
-    FieldType.KNIGHT | FieldType.BLACK: pygame.image.load('resources/knight.png').convert_alpha(),
-    FieldType.BISHOP | FieldType.BLACK: pygame.image.load('resources/bishop.png').convert_alpha(),
-    FieldType.PAWN | FieldType.BLACK: pygame.image.load('resources/pawn.png').convert_alpha(),
+figures = dict()
 
-    FieldType.QUEEN | FieldType.WHITE: pygame.image.load('resources/king_w.png').convert_alpha(),
-    FieldType.KING | FieldType.WHITE: pygame.image.load('resources/queen_w.png').convert_alpha(),
-    FieldType.ROOK | FieldType.WHITE: pygame.image.load('resources/rook_w.png').convert_alpha(),
-    FieldType.KNIGHT | FieldType.WHITE: pygame.image.load('resources/knight_w.png').convert_alpha(),
-    FieldType.BISHOP | FieldType.WHITE: pygame.image.load('resources/bishop_w.png').convert_alpha(),
-    FieldType.PAWN | FieldType.WHITE: pygame.image.load('resources/pawn_w.png').convert_alpha(),
-}
+
+def reload_images():
+    global figures
+
+    figures = {
+        FieldType.QUEEN | FieldType.BLACK: pygame.image.load('resources/king.png').convert_alpha(),
+        FieldType.KING | FieldType.BLACK: pygame.image.load('resources/queen.png').convert_alpha(),
+        FieldType.ROOK | FieldType.BLACK: pygame.image.load('resources/rook.png').convert_alpha(),
+        FieldType.KNIGHT | FieldType.BLACK: pygame.image.load('resources/knight.png').convert_alpha(),
+        FieldType.BISHOP | FieldType.BLACK: pygame.image.load('resources/bishop.png').convert_alpha(),
+        FieldType.PAWN | FieldType.BLACK: pygame.image.load('resources/pawn.png').convert_alpha(),
+
+        FieldType.QUEEN | FieldType.WHITE: pygame.image.load('resources/king_w.png').convert_alpha(),
+        FieldType.KING | FieldType.WHITE: pygame.image.load('resources/queen_w.png').convert_alpha(),
+        FieldType.ROOK | FieldType.WHITE: pygame.image.load('resources/rook_w.png').convert_alpha(),
+        FieldType.KNIGHT | FieldType.WHITE: pygame.image.load('resources/knight_w.png').convert_alpha(),
+        FieldType.BISHOP | FieldType.WHITE: pygame.image.load('resources/bishop_w.png').convert_alpha(),
+        FieldType.PAWN | FieldType.WHITE: pygame.image.load('resources/pawn_w.png').convert_alpha(),
+    }
 
 
 def rescale_images(canvas):
+    reload_images()
     global figures
     figures = {key: scale_figure(figure, canvas) for key, figure in figures.items()}
 
