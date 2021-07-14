@@ -62,3 +62,7 @@ class TurnHistory:
 
         if '#' in self.data:
             print(self.data)
+
+    def save(self, filename):
+        with open(filename, 'w') as file:
+            file.write(self.data)

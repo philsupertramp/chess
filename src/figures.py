@@ -50,7 +50,36 @@ def rescale_images(canvas):
     figures = {key: scale_figure(figure, canvas) for key, figure in figures.items()}
 
 
-class Figure:
+class DirectionMixin:
+    @classmethod
+    def is_diagonal(cls, new_pos: Tuple[int, int], max_length: int = 1) -> bool:
+        return (abs(new_pos[0]) + abs(new_pos[1])) / 2 == abs(new_pos[0]) and abs(new_pos[0]) <= max_length
+
+    @classmethod
+    def is_line(cls, new_pos, max_length) -> bool:
+        return (new_pos[0] == 0 or new_pos[1] == 0) and abs(new_pos[0]) <= max_length
+
+    @classmethod
+    def get_diagonals(cls, pos, length) -> List[Tuple[int, int]]:
+        x = pos[0]
+        y = pos[1]
+        vals = [(x+i+1, y+i+1) for i in range(length)]
+
+        res = list()
+        for _x, _y in vals:
+            for i in [-1, 1]:
+                res.extend([(_x*i, _y*i), (_x*i, _y), (_x, _y*i)])
+        return list(set(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, res)))
+
+    @classmethod
+    def get_lines(cls, pos, length):
+        x = pos[0]
+        y = pos[1]
+        vals = [(x+i+1, y) for i in range(length)] + [(x, y+i+1) for i in range(length)]
+        vals = list(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, vals))
+
+
+class Figure(DirectionMixin):
     def __init__(self, pos, is_white, _board):
         self.position = pos  # careful! this one is inverted position (x == rows, y == cols)
         self.type: int = FieldType.WHITE if is_white else FieldType.BLACK
@@ -183,8 +212,9 @@ class Figure:
 class Pawn(Figure):
     """
     TODO:
-    - allow conversion into another figure
-    - en passant is pretty fucked up, but here's how it works
+    - allow initial 2-field step
+    - disallow non-diagonal checks
+    - en passant-Rule is pretty fucked up, but here's how it works
         - previous move was opponent pawn
         - previous pawn moved 2 steps
         - self is allowed to move to field in between opponents last move and checks opponents pawn
@@ -344,14 +374,7 @@ class Bishop(Figure):
 
     @property
     def allowed_moves(self) -> List[Tuple[int, int]]:
-        x = self.position[0]
-        y = self.position[1]
-        return [
-            (x-1, y-1),
-            (x+1, y-1),
-            (x-1, y+1),
-            (x+1, y+1),
-        ]
+        return self.get_diagonals(self.position, 8)
 
     def is_move_allowed(self, move) -> bool:
         return abs(self.position[0] - move[0]) == abs(self.position[1] - move[1]) and (not (fig := self.can_move(move)) or fig.is_white != self.is_white)

@@ -7,58 +7,8 @@ from src.screen import screen
 
 from src.history import TurnHistory
 
-from src.figures import Figure, rescale_images, FieldType, scale_figure
-
-
-class FigureSelector:
-    white_surf: pygame.Surface
-    black_surf: pygame.Surface
-
-    def __init__(self):
-        self.rescale()
-        self.queen = 0
-        self.rook = 1
-        self.knight = 2
-        self.bishop = 3
-        self.figure_map = {
-            self.queen: FieldType.QUEEN,
-            self.rook: FieldType.ROOK,
-            self.knight: FieldType.KNIGHT,
-            self.bishop: FieldType.BISHOP,
-        }
-
-    def populate_surfaces(self):
-        whites = [
-            scale_figure(pygame.image.load('resources/king.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/rook.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/knight.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/bishop.png').convert_alpha(), screen)
-        ]
-        blacks = [
-            scale_figure(pygame.image.load('resources/king_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/rook_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/knight_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/bishop_w.png').convert_alpha(), screen)
-        ]
-
-        for index, fig in enumerate(whites):
-            self.white_surf.blit(fig, ((index % 2) * fig.get_width(), (max(0, index - 2)) * fig.get_height(), fig.get_width(), fig.get_height()))
-
-        for index, fig in enumerate(blacks):
-            self.black_surf.blit(fig, ((index % 2) * fig.get_width(), (max(0, index - 2)) * fig.get_height(), fig.get_width(), fig.get_height()))
-
-    def rescale(self):
-        cells = screen.get_width() / 4, screen.get_width() / 4
-        # 2x2 canvas
-        self.white_surf = pygame.Surface((cells[0], cells[1]))
-        self.black_surf = pygame.Surface((cells[0], cells[1]))
-        self.populate_surfaces()
-
-    def render(self, iswhite: bool):
-        if iswhite:
-            screen.blit(self.white_surf, self.white_surf.get_rect())
-        else:
-            screen.blit(self.black_surf, self.black_surf.get_rect())
+from src.figures import Figure, rescale_images
+from src.selector import FigureSelector
 
 
 class Game:
@@ -68,13 +18,13 @@ class Game:
     is_mouse_clicked = False
     running = True
     is_white_turn = True
-    needs_render_selector = False
 
     def __init__(self):
         rescale_images(screen)
         self.canvas = pygame.Surface((screen.get_size()[0], screen.get_size()[1] - 20))
         self.board = CheckerBoard(self.canvas)
         self.figure_selector = FigureSelector()
+        self.needs_render_selector = False
 
     def run(self):
         while self.running:
@@ -103,9 +53,9 @@ class Game:
         self.board.draw()
         text = f'{"Whites" if self.is_white_turn else "Blacks"} turn'
         screen.draw_text(text, (screen.get_width() / 2, screen.get_height() - 15))
-        pygame.display.flip()
         if self.needs_render_selector:
-            self.render_selector()
+            self.figure_selector.render(self.is_white_turn)
+        pygame.display.flip()
 
     def handle_window_resize(self):
         self.canvas = pygame.Surface((screen.get_width(), screen.get_height() - 20))
@@ -118,10 +68,29 @@ class Game:
         self.is_mouse_clicked = True
 
         mouse_pos = pygame.mouse.get_pos()
+
         scale = screen.get_width() / 8, (screen.get_height() - 20) / 8
         cols = int(mouse_pos[0] / scale[0])
         rows = int(mouse_pos[1] / scale[1])
 
+        if self.needs_render_selector:
+            self.handle_figure_replacement((rows, cols))
+        else:
+            self.handle_figure_selection((rows, cols))
+
+    def handle_figure_replacement(self, mouse_pos):
+        rows, cols = mouse_pos
+        if rows > 1 or cols > 1:
+            print('Error selecting...\nRetry!')
+        fig_class = self.figure_selector.select(rows * 2 + cols)
+        figure = fig_class(self.selected_figure.position, is_white=self.selected_figure.is_white, _board=self.board)
+        self.board.fields[self.selected_figure.position[1]][self.selected_figure.position[0]] = figure
+        self.selected_figure = None
+        self.needs_render_selector = False
+        self.is_white_turn = not self.is_white_turn
+
+    def handle_figure_selection(self, mouse_pos):
+        rows, cols = mouse_pos
         if not self.selected_figure:
             self.selected_figure = self.board.fields[rows][cols]
             # only allow selection if its the players turn
@@ -141,19 +110,24 @@ class Game:
                 if prev_fig and prev_fig.checkmate():
                     self.running = False
                     print(f'Game over {"white" if self.is_white_turn else "black"} wins.')
+
                 self.board.fields[old_pos[1]][old_pos[0]] = None
                 self.board.fields[rows][cols] = self.selected_figure
+                if hasattr(self.selected_figure, 'needs_render_selector'):
+                    self.needs_render_selector = self.selected_figure.board.needs_render_selector
+                    # always delete the temporary value. aint no snitch, but try keepin it immutable, fam
+                    del self.selected_figure.board.needs_render_selector
 
-                # switch turn
-                self.is_white_turn = not self.is_white_turn
+                if not self.needs_render_selector:
+                    # switch turn
+                    self.is_white_turn = not self.is_white_turn
             else:
                 print(f'Tried moving {self.selected_figure} -> {(cols, rows)}, not allowed.')
-            self.board.fields[self.selected_figure.position[1]][self.selected_figure.position[0]].is_selected = False
-            self.selected_figure = None
-            self.board.process_figure_changes()
 
-    def render_selector(self):
-        self.figure_selector.render(self.is_white_turn)
+            self.board.fields[self.selected_figure.position[1]][self.selected_figure.position[0]].is_selected = False
+            if not self.needs_render_selector:
+                self.selected_figure = None
+            self.board.process_figure_changes()
 
 
 if __name__ == '__main__':
