@@ -127,7 +127,7 @@ class Figure(DirectionMixin):
         return self.board.fields[move[1]][move[0]]
 
     def move(self, new_pos) -> bool:
-        if not self.locked() and self.is_move_allowed(new_pos):
+        if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.position = new_pos
             self.has_moved = True
             return True
@@ -239,8 +239,13 @@ class Pawn(Figure):
             return target_figure.is_white != self.is_white
 
         return ((self.position[0] - move[0]) == 0
-                and (abs(move[1] - self.position[1]) <= 1)
-                and (not (fig := self.can_move(move)) or fig.is_white != self.is_white))
+                and (abs(move[1] - self.position[1]) <= (1 if self.has_moved else 2))
+                # TODO: add sign here => and (move[1]-move[1]) == (-0.0 if self.is_white else 0.0)
+                and not self.can_move(move)) or (
+                abs(self.position[0] - move[0]) == 1
+                and abs(move[1] - self.position[1]) == 1
+                and ((fig := self.can_move(move)) and fig.is_white != self.is_white)
+        )
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Pawn: {self.position}'
