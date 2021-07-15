@@ -20,8 +20,11 @@ class CheckerBoard:
         self.canvas = display
         self.init_empty_field()
 
-        self.fields: List[List[Optional[Figure]]] = [[None for _ in range(8)] for _ in range(8)]
+        self.fields: List[List[Optional[Figure]]] = list()
+        self.reset()
 
+    def reset(self):
+        self.fields = [[None for _ in range(8)] for _ in range(8)]
         # only pawns and kings: '4k/PPPPPPPP/8/8/8/8/pppppppp/4K'
         self.load_game_from_string('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 

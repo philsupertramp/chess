@@ -2,6 +2,8 @@ from typing import Tuple, List, Optional, Union
 
 import pygame
 
+from src.helpers import sign
+
 
 class FieldType:
     EMPTY = 0
@@ -28,15 +30,15 @@ def reload_images():
     global figures
 
     figures = {
-        FieldType.QUEEN | FieldType.BLACK: pygame.image.load('resources/king.png').convert_alpha(),
-        FieldType.KING | FieldType.BLACK: pygame.image.load('resources/queen.png').convert_alpha(),
+        FieldType.QUEEN | FieldType.BLACK: pygame.image.load('resources/queen.png').convert_alpha(),
+        FieldType.KING | FieldType.BLACK: pygame.image.load('resources/king.png').convert_alpha(),
         FieldType.ROOK | FieldType.BLACK: pygame.image.load('resources/rook.png').convert_alpha(),
         FieldType.KNIGHT | FieldType.BLACK: pygame.image.load('resources/knight.png').convert_alpha(),
         FieldType.BISHOP | FieldType.BLACK: pygame.image.load('resources/bishop.png').convert_alpha(),
         FieldType.PAWN | FieldType.BLACK: pygame.image.load('resources/pawn.png').convert_alpha(),
 
-        FieldType.QUEEN | FieldType.WHITE: pygame.image.load('resources/king_w.png').convert_alpha(),
-        FieldType.KING | FieldType.WHITE: pygame.image.load('resources/queen_w.png').convert_alpha(),
+        FieldType.QUEEN | FieldType.WHITE: pygame.image.load('resources/queen_w.png').convert_alpha(),
+        FieldType.KING | FieldType.WHITE: pygame.image.load('resources/king_w.png').convert_alpha(),
         FieldType.ROOK | FieldType.WHITE: pygame.image.load('resources/rook_w.png').convert_alpha(),
         FieldType.KNIGHT | FieldType.WHITE: pygame.image.load('resources/knight_w.png').convert_alpha(),
         FieldType.BISHOP | FieldType.WHITE: pygame.image.load('resources/bishop_w.png').convert_alpha(),
@@ -63,20 +65,21 @@ class DirectionMixin:
     def get_diagonals(cls, pos, length) -> List[Tuple[int, int]]:
         x = pos[0]
         y = pos[1]
-        vals = [(x+i+1, y+i+1) for i in range(length)]
 
         res = list()
-        for _x, _y in vals:
-            for i in [-1, 1]:
-                res.extend([(_x*i, _y*i), (_x*i, _y), (_x, _y*i)])
+        for _x in range(1, length + 1):
+            res.extend([(x+_x, y+_x), (x-_x, y-_x), (x-_x, y+_x), (x+_x, y-_x)])
         return list(set(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, res)))
 
     @classmethod
     def get_lines(cls, pos, length):
         x = pos[0]
         y = pos[1]
-        vals = [(x+i+1, y) for i in range(length)] + [(x, y+i+1) for i in range(length)]
-        vals = list(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, vals))
+
+        res = list()
+        for _x in range(1, length + 1):
+            res.extend([(x + _x, y), (x - _x, y), (x, y + _x), (x, y - _x)])
+        return list(set(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, res)))
 
 
 class Figure(DirectionMixin):
@@ -87,25 +90,35 @@ class Figure(DirectionMixin):
         self.board: 'CheckerBoard' = _board
         self.is_selected = False
         self.has_moved = False
+        self.can_jump = False
+        self.allowed_moves: List[Tuple[int, int]] = list()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
+    def update_allowed_moves(self) -> None:
         raise NotImplementedError
 
     def check_field(self, move) -> Optional['Figure']:
-        return self.get_figure_at_target(move)
+        return self.board.fields[move[1]][move[0]]
 
     def can_move(self, move) -> Optional['Figure']:
-        figure_at_target = self.get_figure_at_target(move)
-        if figure_at_target is not None:
-            return figure_at_target
+        """
+        Determines whether a move can be performed or not
+
+        :param move: the actual tile location to move to
+        :return: Figure or None, None is considered good and successful
+        """
+        if move not in self.allowed_moves:
+            # idk, there's no other way then providing an arbitrary object here
+            return Figure((-1, -1), self.is_white, self.board)
+
+        if self.can_jump:
+            return None
 
         diff_x = move[0] - self.position[0]
         diff_y = move[1] - self.position[1]
 
         if abs(diff_x) > 0 and abs(diff_x) == abs(diff_y):
             # diagonal move
-            factors = (1 if diff_x > 0 else -1, 1 if diff_y > 0 else -1,)
+            factors = (sign(diff_x), sign(diff_y))
             for i in range(1, min(abs(diff_x) + 1, 8)):
                 if fig := self.check_field((self.position[0] + factors[0] * i, self.position[1] + factors[1] * i)):
                     return fig
@@ -121,15 +134,14 @@ class Figure(DirectionMixin):
             for i in range(1, min(abs(diff_y) + 1, 8)):
                 if fig := self.check_field((self.position[0], self.position[1] + factor * i)):
                     return fig
-        return None
 
-    def get_figure_at_target(self, move) -> Optional['Figure']:
-        return self.board.fields[move[1]][move[0]]
+        return self.check_field(move)
 
     def move(self, new_pos) -> bool:
         if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.position = new_pos
             self.has_moved = True
+            self.update_allowed_moves()
             return True
         return False
 
@@ -137,7 +149,8 @@ class Figure(DirectionMixin):
         return False
 
     def is_move_allowed(self, move) -> bool:
-        raise NotImplementedError
+        fig = self.can_move(move)
+        return not fig or (fig.position[0] == move[0] and fig.position[1] == move[1] and fig.is_white != self.is_white)
 
     def draw(self, canvas: pygame.Surface) -> None:
         if self.type == FieldType.EMPTY:
@@ -185,14 +198,15 @@ class Figure(DirectionMixin):
             for cell in row:
                 if not cell or cell.is_white == self.is_white:
                     continue
-                target_fields = cell.get_target_fields()
+                target_fields = cell.allowed_moves
                 if own_king_pos in target_fields:
                     for x in range(abs(own_king_pos[0] - cell.position[0]) + 1):
                         for y in range(abs(own_king_pos[1] - cell.position[1]) + 1):
                             checkmate_positions.append((own_king_pos[0] + x, own_king_pos[1] + y))
         return checkmate_positions
 
-    def clean_target_fields(self, fields) -> List[Tuple[int, int]]:
+    @staticmethod
+    def clean_target_fields(fields: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         """
         Drops fields not present on the board
         :param fields:
@@ -200,13 +214,10 @@ class Figure(DirectionMixin):
         """
         cleaned_fields = []
         for field in fields:
-            if field[0] < 0 or field[1] < 0:
+            if field[0] < 0 or field[1] < 0 or field[0] > 7 or field[1] > 7:
                 continue
             cleaned_fields.append(field)
-        return fields
-
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        raise NotImplementedError
+        return cleaned_fields
 
 
 class Pawn(Figure):
@@ -224,38 +235,61 @@ class Pawn(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.PAWN
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
+    def update_allowed_moves(self) -> None:
         direction = -1 if self.is_white else 1
-        return list(
+
+        # TODO: fixit
+        # right
+        if 0 < self.position[0] - direction < 8 and 0 < self.position[1] + direction < 8:
+            pos = (self.position[0] - direction, self.position[1] + direction)
+            fig = self.board.fields[pos[1]][pos[0]]
+            if fig:
+                if fig.is_white != self.is_white:
+                    if self.position not in fig.allowed_moves:
+                        fig.update_allowed_moves()
+                    self.allowed_moves.append(pos)
+
+        # left
+        if 0 < self.position[0] + direction < 8 and 0 < self.position[1] - direction < 8:
+            pos = (self.position[0] + direction, self.position[1] - direction)
+            fig = self.board.fields[pos[1]][pos[0]]
+            if fig:
+                if fig.is_white != self.is_white:
+                    if self.position not in fig.allowed_moves:
+                        fig.update_allowed_moves()
+                    self.allowed_moves.append(pos)
+
+        self.allowed_moves += list(
             [(self.position[0], self.position[1] + direction)]
             + ([(self.position[0], self.position[1] + (2 * direction))] if not self.has_moved else [])
         )
 
     def is_move_allowed(self, move) -> bool:
-        if abs(move[0] - self.position[0]) == 1 and abs(move[1] - self.position[1]) == 1 \
-                and (target_figure := self.get_figure_at_target(move)) is not None:
-            return target_figure.is_white != self.is_white
+        return (
+                (sign(move[1] - self.position[1]) == (-1 if self.is_white else 1))
+                and (self.is_valid_move(move) or self.is_valid_check(move))
+        )
 
-        return ((self.position[0] - move[0]) == 0
-                and (abs(move[1] - self.position[1]) <= (1 if self.has_moved else 2))
-                # TODO: add sign here => and (move[1]-move[1]) == (-0.0 if self.is_white else 0.0)
-                and not self.can_move(move)) or (
+    def is_valid_check(self, move):
+        # is unblocked move in column
+        return (
                 abs(self.position[0] - move[0]) == 1
                 and abs(move[1] - self.position[1]) == 1
                 and ((fig := self.can_move(move)) and fig.is_white != self.is_white)
         )
 
+    def is_valid_move(self, move):
+        # is unblocked move in column
+        return ((self.position[0] - move[0]) == 0
+                and (abs(move[1] - self.position[1]) <= (1 if self.has_moved else 2))
+                and not self.can_move(move))
+
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Pawn: {self.position}'
 
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        return self.clean_target_fields(self.allowed_moves)
-
     def move(self, new_pos) -> bool:
-        # todo: this is the place were we need to check if pawn is on last tile on opponents side
-        #       then convert pawn into new figure
         allowed = super().move(new_pos)
 
         if (self.is_white and new_pos[1] == 0) or (not self.is_white and new_pos[1] == 7):
@@ -268,68 +302,23 @@ class Queen(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.QUEEN
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
-        x = self.position[0]
-        y = self.position[1]
-        return [
-            (x-1, y+1),
-            (x+1, y+1),
-            (x+1, y-1),
-            (x-1, y-1),
-            (x-1, y),
-            (x, y+1),
-            (x+1, y),
-            (x, y-1),
-        ]
-
-    def is_move_allowed(self, move) -> bool:
-        return not (fig := self.can_move(move)) or fig.is_white != self.is_white  # and abs(self.position[0] - move[0]) <= 1 and abs(self.position[1] - move[1]) <= 1
+    def update_allowed_moves(self) -> None:
+        self.allowed_moves = self.get_diagonals(self.position, 8) + self.get_lines(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Queen: {self.position}'
-
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        targets = []
-        for x in range(8):
-            for y in range(8):
-                abs_x = abs(self.position[0] - x)
-                abs_y = abs(self.position[1] - y)
-                if abs_y == 0 and abs_x == 0:
-                    continue
-                # potential bug
-                if (0 < abs_x == abs_y) \
-                        or (abs_x > 0 and abs_y == 0) \
-                        or (abs_y > 0 and abs_x == 0):
-                    targets.append((x, y))
-        return self.clean_target_fields(targets)
 
 
 class King(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KING
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
-        x = self.position[0]
-        y = self.position[1]
-        return [
-            (x-1, y+1),
-            (x+1, y+1),
-            (x+1, y-1),
-            (x-1, y-1),
-            (x-1, y),
-            (x, y+1),
-            (x+1, y),
-            (x, y-1),
-        ]
-
-    def is_move_allowed(self, move) -> bool:
-        # (abs(move[0]) <= 1 and abs(move[1]) <= 1) and (not (abs(move[0]) == 1 and abs(move[1]) == 1))
-
-        return abs(self.position[0] - move[0]) <= 1 and abs(self.position[1] - move[1]) <= 1 and (not (fig := self.can_move(move)) or fig.is_white != self.is_white)
+    def update_allowed_moves(self) -> None:
+        self.allowed_moves = self.get_diagonals(self.position, 1) + self.get_lines(self.position, 1)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}King: {self.position}'
@@ -337,105 +326,52 @@ class King(Figure):
     def checkmate(self) -> bool:
         return True
 
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        return self.clean_target_fields(
-            [(self.position[0] + i, self.position[1] + j) for i in range(-1, 1, 2) for j in range(-1, 1, 2)])
-
 
 class Rook(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.ROOK
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
-        x = self.position[0]
-        y = self.position[1]
-        return [
-            (x-1, y),
-            (x, y-1),
-            (x+1, y),
-            (x, y+1),
-        ]
-
-    def is_move_allowed(self, move) -> bool:
-        return (abs(self.position[0] - move[0]) <= 1) != (abs(self.position[1] - move[1]) <= 1) \
-               and (not (fig := self.can_move(move)) or fig.is_white != self.is_white)
+    def update_allowed_moves(self) -> None:
+        self.allowed_moves = self.get_lines(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Rook: {self.position}'
-
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        return self.clean_target_fields(
-            [(i, self.position[1]) for i in range(8, 1) if i != self.position[0]]
-            + [(self.position[0], i) for i in range(8, 1) if i != self.position[1]]
-        )
 
 
 class Bishop(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.BISHOP
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
-        return self.get_diagonals(self.position, 8)
-
-    def is_move_allowed(self, move) -> bool:
-        return abs(self.position[0] - move[0]) == abs(self.position[1] - move[1]) and (not (fig := self.can_move(move)) or fig.is_white != self.is_white)
+    def update_allowed_moves(self) -> None:
+        self.allowed_moves = self.get_diagonals(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Bishop: {self.position}'
-
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        targets = []
-        for i in range(self.position[0]):
-            if self.position[1] - i >= 0:
-                targets.append((self.position[0] - i, self.position[1] - i))
-        for i in range(self.position[1]):
-            if self.position[0] - i >= 0:
-                targets.append((self.position[0] - i, self.position[1] - i))
-        for i in range(self.position[0], 8):
-            if self.position[1] + i >= 0:
-                targets.append((self.position[0] + i, self.position[1] + i))
-        for i in range(self.position[1], 8):
-            if self.position[0] - i >= 0:
-                targets.append((self.position[0] + i, self.position[1] + i))
-
-        return self.clean_target_fields(targets)
 
 
 class Knight(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KNIGHT
+        self.can_jump = True
+        self.update_allowed_moves()
 
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
+    def update_allowed_moves(self) -> None:
         x = self.position[0]
         y = self.position[1]
-        return [
+        self.allowed_moves = self.clean_target_fields([
             (x - 1, y - 2), (x - 2, y - 1),
             (x + 1, y - 2), (x + 2, y - 1),
             (x - 1, y + 2), (x - 2, y + 1),
             (x + 1, y + 2), (x + 2, y + 1)
-        ]
-
-    def is_move_allowed(self, move) -> bool:
-        abs_x = abs(self.position[0] - move[0])
-        abs_y = abs(self.position[1] - move[1])
-        return (((abs_x == 1 and abs_y == 2) or (abs_x == 2 and abs_y == 1))
-                and (not (fig := self.can_move(move)) or fig.is_white != self.is_white))
+        ])
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Knight: {self.position}'
-
-    def get_target_fields(self) -> List[Tuple[int, int]]:
-        return self.clean_target_fields(self.allowed_moves)
-
-    def clean_target_fields(self, fields) -> List[Tuple[int, int]]:
-        # overrides parent method
-        return fields
 
 
 class FigureChange:

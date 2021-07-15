@@ -1,4 +1,4 @@
-
+import time
 from typing import Optional
 import pygame
 
@@ -46,7 +46,6 @@ class Game:
 
                 if event.type == pygame.MOUSEBUTTONUP:
                     self.is_mouse_clicked = False
-        pygame.quit()
 
     def render(self):
         screen.fill((255, 255, 255))
@@ -106,7 +105,7 @@ class Game:
 
             if old_pos != (cols, rows) and self.selected_figure.move((cols, rows)):
                 prev_fig = self.board.fields[rows][cols]
-                self.history.record(self.selected_figure, (rows, cols), prev_fig)
+                self.history.record(self.selected_figure, old_pos, (rows, cols), prev_fig)
                 if prev_fig and prev_fig.checkmate():
                     self.running = False
                     print(f'Game over {"white" if self.is_white_turn else "black"} wins.')
@@ -129,7 +128,36 @@ class Game:
                 self.selected_figure = None
             self.board.process_figure_changes()
 
+    def reset(self):
+        self.canvas = pygame.Surface((screen.get_size()[0], screen.get_size()[1] - 20))
+        self.board = CheckerBoard(self.canvas)
+        self.figure_selector = FigureSelector()
+        self.needs_render_selector = False
+
+        self.is_mouse_clicked = False
+        self.running = True
+        self.is_white_turn = True
+
+    def replay(self, step_length: float = 3.0) -> None:
+        """
+
+        :param step_length: time between steps to display
+        """
+        moves = self.history.turns
+        for turn in moves:
+            self.handle_figure_selection(turn.start)
+            self.handle_figure_selection(turn.end)
+            self.render()
+            self.board.process_figure_changes()
+
+            time.sleep(step_length)
+
 
 if __name__ == '__main__':
     game = Game()
     game.run()
+
+    game.reset()
+    game.replay()
+
+    pygame.quit()

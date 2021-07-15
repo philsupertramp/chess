@@ -36,14 +36,25 @@ class DirectionCheckMixinTestCase(TestCase):
 
     def test_get_diagonals(self):
         diagonals = DirectionMixin.get_diagonals((3, 3), 1)
-        expected = {(4, 4), (-4, 4), (4, -4), (-4, -4)}
+        expected = {(2, 2), (4, 4), (2, 4), (4, 2)}
 
         self.assertSetEqual(set(diagonals), expected, diagonals)
 
         diagonals = DirectionMixin.get_diagonals((3, 3), 2)
-        expected = {(4, 4), (-4, 4), (4, -4), (-4, -4), (5, 5), (-5, 5), (5, -5), (-5, -5)}
+        expected = {(2, 2), (4, 4), (2, 4), (4, 2), (1, 1), (5, 5), (1, 5), (5, 1)}
 
         self.assertSetEqual(set(diagonals), expected, diagonals)
+
+    def test_get_lines(self):
+        lines = DirectionMixin.get_lines((3, 3), 1)
+        expected = {(4, 3), (2, 3), (3, 4), (3, 2)}
+
+        self.assertSetEqual(set(lines), expected, lines)
+
+        lines = DirectionMixin.get_lines((3, 3), 2)
+        expected = {(4, 3), (2, 3), (3, 4), (3, 2), (5, 3), (1, 3), (3, 5), (3, 1)}
+
+        self.assertSetEqual(set(lines), expected, lines)
 
 
 if __name__ == '__main__':
