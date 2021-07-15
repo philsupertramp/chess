@@ -223,7 +223,7 @@ class Figure(DirectionMixin):
 class Pawn(Figure):
     """
     TODO:
-    - allow initial 2-field step
+    - fix allowed_move for diagonal checks
     - disallow non-diagonal checks
     - en passant-Rule is pretty fucked up, but here's how it works
         - previous move was opponent pawn
