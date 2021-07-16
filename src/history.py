@@ -16,6 +16,9 @@ class TurnHistory:
     turns: List[Turn] = list()
     is_final: bool = False
 
+    def __init__(self):
+        self.prev_was_pawn = False
+
     def record(self, figure, old_pos, move, prev_fig):
         """
         Records Figure moved from [figure.position] [x] [move]
@@ -30,6 +33,8 @@ class TurnHistory:
         """
         if self.is_final:
             return
+
+        self.prev_was_pawn = figure.type == (FieldType.PAWN + FieldType.WHITE if figure.is_white else FieldType.BLACK)
 
         self.last_move = ''
         if figure.is_white:

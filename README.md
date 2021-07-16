@@ -9,7 +9,7 @@ Famous quote:
 This project will be used to train a model using deep reinforcement learning (deep RL) based on opponents play.  
 Nevertheless, the game can be played in multi-player mode without fancy ML features.
 
-The project will eventually contain the following features (ticked ones are implemented already)
+The project will eventually contain the following features (ticked ones implemented)
 - [ ] complete chess game
 - [ ] history log and game loading
 

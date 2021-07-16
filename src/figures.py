@@ -91,9 +91,11 @@ class Figure(DirectionMixin):
         self.is_selected = False
         self.has_moved = False
         self.can_jump = False
-        self.allowed_moves: List[Tuple[int, int]] = list()
+        self.en_passant = False
+        # self.allowed_moves: List[Tuple[int, int]] = list()
 
-    def update_allowed_moves(self) -> None:
+    @property
+    def allowed_moves(self) -> None:
         raise NotImplementedError
 
     def check_field(self, move) -> Optional['Figure']:
@@ -141,7 +143,6 @@ class Figure(DirectionMixin):
         if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.position = new_pos
             self.has_moved = True
-            self.update_allowed_moves()
             return True
         return False
 
@@ -171,7 +172,8 @@ class Figure(DirectionMixin):
         square_size = int(canvas.get_width() / 8), int(canvas.get_height() / 8)
         mask = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
         for move in self.allowed_moves:
-            pygame.draw.rect(mask, (0, 0, 0, 100), (move[0] * square_size[0], move[1] * square_size[1], square_size[0], square_size[1]))
+            pos = (move[0] * square_size[0], move[1] * square_size[1], square_size[0], square_size[1])
+            pygame.draw.rect(mask, (0, 0, 0, 100), pos)
 
         canvas.blit(mask, mask.get_rect())
 
@@ -223,8 +225,6 @@ class Figure(DirectionMixin):
 class Pawn(Figure):
     """
     TODO:
-    - fix allowed_move for diagonal checks
-    - disallow non-diagonal checks
     - en passant-Rule is pretty fucked up, but here's how it works
         - previous move was opponent pawn
         - previous pawn moved 2 steps
@@ -235,21 +235,19 @@ class Pawn(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.PAWN
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
         direction = -1 if self.is_white else 1
+        moves = list()
 
-        # TODO: fixit
         # right
         if 0 < self.position[0] - direction < 8 and 0 < self.position[1] + direction < 8:
             pos = (self.position[0] - direction, self.position[1] + direction)
             fig = self.board.fields[pos[1]][pos[0]]
             if fig:
                 if fig.is_white != self.is_white:
-                    if self.position not in fig.allowed_moves:
-                        fig.update_allowed_moves()
-                    self.allowed_moves.append(pos)
+                    moves.append(pos)
 
         # left
         if 0 < self.position[0] + direction < 8 and 0 < self.position[1] - direction < 8:
@@ -257,14 +255,15 @@ class Pawn(Figure):
             fig = self.board.fields[pos[1]][pos[0]]
             if fig:
                 if fig.is_white != self.is_white:
-                    if self.position not in fig.allowed_moves:
-                        fig.update_allowed_moves()
-                    self.allowed_moves.append(pos)
+                    moves.append(pos)
 
-        self.allowed_moves += list(
+        # TODO: add en passant rule here!
+
+        moves += list(
             [(self.position[0], self.position[1] + direction)]
             + ([(self.position[0], self.position[1] + (2 * direction))] if not self.has_moved else [])
         )
+        return moves
 
     def is_move_allowed(self, move) -> bool:
         return (
@@ -290,6 +289,8 @@ class Pawn(Figure):
         return f'{"white " if self.is_white else "black "}Pawn: {self.position}'
 
     def move(self, new_pos) -> bool:
+        pos = self.position
+        dist = new_pos[0] - pos[0], new_pos[1] - pos[1]
         allowed = super().move(new_pos)
 
         if (self.is_white and new_pos[1] == 0) or (not self.is_white and new_pos[1] == 7):
@@ -302,10 +303,10 @@ class Queen(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.QUEEN
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
-        self.allowed_moves = self.get_diagonals(self.position, 8) + self.get_lines(self.position, 8)
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
+        return self.get_diagonals(self.position, 8) + self.get_lines(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Queen: {self.position}'
@@ -315,10 +316,10 @@ class King(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KING
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
-        self.allowed_moves = self.get_diagonals(self.position, 1) + self.get_lines(self.position, 1)
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
+        return self.get_diagonals(self.position, 1) + self.get_lines(self.position, 1)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}King: {self.position}'
@@ -331,10 +332,10 @@ class Rook(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.ROOK
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
-        self.allowed_moves = self.get_lines(self.position, 8)
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
+        return self.get_lines(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Rook: {self.position}'
@@ -344,10 +345,10 @@ class Bishop(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.BISHOP
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
-        self.allowed_moves = self.get_diagonals(self.position, 8)
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
+        return self.get_diagonals(self.position, 8)
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}Bishop: {self.position}'
@@ -358,12 +359,12 @@ class Knight(Figure):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KNIGHT
         self.can_jump = True
-        self.update_allowed_moves()
 
-    def update_allowed_moves(self) -> None:
+    @property
+    def allowed_moves(self) -> List[Tuple[int, int]]:
         x = self.position[0]
         y = self.position[1]
-        self.allowed_moves = self.clean_target_fields([
+        return self.clean_target_fields([
             (x - 1, y - 2), (x - 2, y - 1),
             (x + 1, y - 2), (x + 2, y - 1),
             (x - 1, y + 2), (x - 2, y + 1),
