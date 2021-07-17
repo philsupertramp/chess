@@ -18,13 +18,13 @@ class FieldType:
     BLACK = 16
 
     @classmethod
-    def clear(cls, val: int):
+    def clear(cls, val: int) -> int:
         if val - cls.BLACK > 0:
             return val - cls.BLACK
         return val - cls.WHITE
 
 
-def scale_figure(figure: pygame.Surface, canvas: pygame.Surface):
+def scale_figure(figure: pygame.Surface, canvas: pygame.Surface) -> pygame.Surface:
     ratio = (int(canvas.get_width() / 8), int(canvas.get_height() / 8))
     return pygame.transform.scale(figure, ratio)
 
@@ -32,7 +32,7 @@ def scale_figure(figure: pygame.Surface, canvas: pygame.Surface):
 figures = dict()
 
 
-def reload_images():
+def reload_images() -> None:
     global figures
 
     figures = {
@@ -52,7 +52,7 @@ def reload_images():
     }
 
 
-def rescale_images(canvas):
+def rescale_images(canvas: pygame.Surface) -> None:
     reload_images()
     global figures
     figures = {key: scale_figure(figure, canvas) for key, figure in figures.items()}
@@ -64,11 +64,11 @@ class DirectionMixin:
         return (abs(new_pos[0]) + abs(new_pos[1])) / 2 == abs(new_pos[0]) and abs(new_pos[0]) <= max_length
 
     @classmethod
-    def is_line(cls, new_pos, max_length) -> bool:
+    def is_line(cls, new_pos: Tuple[int, int], max_length: int) -> bool:
         return (new_pos[0] == 0 or new_pos[1] == 0) and abs(new_pos[0]) <= max_length
 
     @classmethod
-    def get_diagonals(cls, pos, length) -> List[Tuple[int, int]]:
+    def get_diagonals(cls, pos: Tuple[int, int], length: int) -> List[Tuple[int, int]]:
         x = pos[0]
         y = pos[1]
 
@@ -78,7 +78,7 @@ class DirectionMixin:
         return list(set(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, res)))
 
     @classmethod
-    def get_lines(cls, pos, length):
+    def get_lines(cls, pos: Tuple[int, int], length: int) -> List[Tuple[int, int]]:
         x = pos[0]
         y = pos[1]
 
@@ -89,8 +89,8 @@ class DirectionMixin:
 
 
 class Figure(DirectionMixin):
-    def __init__(self, pos, is_white, _board):
-        self.position = pos  # careful! this one is inverted position (x == rows, y == cols)
+    def __init__(self, pos: Tuple[int, int], is_white: bool, _board: 'CheckerBoard'):
+        self.position = pos  # careful! this one is inverted position in board (x == rows, y == cols)
         self.type: int = FieldType.WHITE if is_white else FieldType.BLACK
         self.is_white: bool = is_white
         self.board: 'CheckerBoard' = _board
@@ -102,13 +102,13 @@ class Figure(DirectionMixin):
         # self.allowed_moves: List[Tuple[int, int]] = list()
 
     @property
-    def allowed_moves(self) -> None:
+    def allowed_moves(self) -> List[Tuple[int, int]]:
         raise NotImplementedError
 
-    def check_field(self, move) -> Optional['Figure']:
+    def check_field(self, move: Tuple[int, int]) -> Optional['Figure']:
         return self.board.fields[move[1]][move[0]]
 
-    def can_move(self, move) -> Optional['Figure']:
+    def can_move(self, move: Tuple[int, int]) -> Optional['Figure']:
         """
         Determines whether a move can be performed or not
 
@@ -146,7 +146,7 @@ class Figure(DirectionMixin):
 
         return self.check_field(move)
 
-    def move(self, new_pos) -> bool:
+    def move(self, new_pos: Tuple[int, int]) -> bool:
         if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.position = new_pos
             self.has_moved = True
@@ -156,7 +156,7 @@ class Figure(DirectionMixin):
     def checkmate(self) -> bool:
         return False
 
-    def is_move_allowed(self, move) -> bool:
+    def is_move_allowed(self, move: Tuple[int, int]) -> bool:
         fig = self.can_move(move)
         return not fig or (fig.position[0] == move[0] and fig.position[1] == move[1] and fig.is_white != self.is_white)
 
@@ -230,7 +230,7 @@ class Figure(DirectionMixin):
 
 
 class Pawn(Figure):
-    def __init__(self, pos, **kwargs):
+    def __init__(self, pos: Tuple[int, int], **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.PAWN
 
@@ -270,37 +270,37 @@ class Pawn(Figure):
         )
         return moves
 
-    def is_move_allowed(self, move) -> bool:
+    def is_move_allowed(self, move: Tuple[int, int]) -> bool:
         return (
-                (sign(move[1] - self.position[1]) == (-1 if self.is_white else 1))
-                and (self.is_valid_move(move) or self.is_valid_check(move))
+            (sign(move[1] - self.position[1]) == (-1 if self.is_white else 1))
+            and (self.is_valid_move(move) or self.is_valid_check(move))
         )
 
     def is_valid_check(self, move):
         direction = -1 if self.is_white else 1
         # is unblocked move in column
         if ((en_passant_fig := self.check_field(
-                (move[0],
-                 move[1] - direction))) and en_passant_fig.is_white != self.is_white and en_passant_fig.en_passant):
+            (move[0],
+             move[1] - direction))) and en_passant_fig.is_white != self.is_white and en_passant_fig.en_passant):
             self.checked_en_passant = True
             return True
 
         return (
-                abs(self.position[0] - move[0]) == 1
-                and abs(move[1] - self.position[1]) == 1
-                and ((fig := self.can_move(move)) and fig.is_white != self.is_white)
+            abs(self.position[0] - move[0]) == 1
+            and abs(move[1] - self.position[1]) == 1
+            and ((fig := self.can_move(move)) and fig.is_white != self.is_white)
         )
 
-    def is_valid_move(self, move):
+    def is_valid_move(self, move: Tuple[int, int]) -> bool:
         # is unblocked move in column
         return ((self.position[0] - move[0]) == 0
                 and (abs(move[1] - self.position[1]) <= (1 if self.has_moved else 2))
                 and not self.can_move(move))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Pawn: {self.position}'
 
-    def move(self, new_pos) -> bool:
+    def move(self, new_pos: Tuple[int, int]) -> bool:
         pos = self.position
         allowed = super().move(new_pos)
 
@@ -314,7 +314,7 @@ class Pawn(Figure):
 
 
 class Queen(Figure):
-    def __init__(self, pos, **kwargs):
+    def __init__(self, pos: Tuple[int, int], **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.QUEEN
 
@@ -322,12 +322,12 @@ class Queen(Figure):
     def allowed_moves(self) -> List[Tuple[int, int]]:
         return self.get_diagonals(self.position, 8) + self.get_lines(self.position, 8)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Queen: {self.position}'
 
 
 class King(Figure):
-    def __init__(self, pos, **kwargs):
+    def __init__(self, pos: Tuple[int, int], **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KING
         self.can_castle = True
@@ -353,7 +353,7 @@ class King(Figure):
                 out.append(rook.position)
         return out
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}King: {self.position}'
 
     def checkmate(self) -> bool:
@@ -369,7 +369,7 @@ class King(Figure):
 
 
 class Rook(Figure):
-    def __init__(self, pos, **kwargs):
+    def __init__(self, pos: Tuple[int, int], **kwargs) -> None:
         super().__init__(pos, **kwargs)
         self.type |= FieldType.ROOK
 
@@ -377,7 +377,7 @@ class Rook(Figure):
     def allowed_moves(self) -> List[Tuple[int, int]]:
         return self.get_lines(self.position, 8)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Rook: {self.position}'
 
 
@@ -395,7 +395,7 @@ class Bishop(Figure):
 
 
 class Knight(Figure):
-    def __init__(self, pos, **kwargs):
+    def __init__(self, pos: Tuple[int, int], **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KNIGHT
         self.can_jump = True
@@ -411,17 +411,17 @@ class Knight(Figure):
             (x + 1, y + 2), (x + 2, y + 1)
         ])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Knight: {self.position}'
 
 
 class FigureChange:
-    def __init__(self, figure: 'Figure', new_figure_type: Union[FieldType, int]):
+    def __init__(self, figure: 'Figure', new_figure_type: Union[FieldType, int]) -> None:
         self.prev_figure = figure
         self.new_figure: Optional[Figure] = None
         self.set_new_figure(new_figure_type)
 
-    def set_new_figure(self, figure_type) -> None:
+    def set_new_figure(self, figure_type: int) -> None:
         is_white = self.prev_figure.is_white
         if figure_type == FieldType.QUEEN:
             self.new_figure = Queen(self.prev_figure.position, is_white=is_white, _board=self.prev_figure.board)

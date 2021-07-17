@@ -12,7 +12,7 @@ class CheckerBoard:
     fields: List[List[Optional[Figure]]] = list(list())
     figure_changes: List[FigureChange] = list()
 
-    def __init__(self, display: pygame.Surface):
+    def __init__(self, display: pygame.Surface) -> None:
         # Texture for simple rendering
         self.empty_board: Optional[pygame.Surface] = None
         # cell height and width
@@ -25,11 +25,11 @@ class CheckerBoard:
         self.init_empty_field()
         self.reset()
 
-    def rescale(self, canvas):
+    def rescale(self, canvas: pygame.Surface) -> None:
         self.canvas = canvas
         self.init_empty_field()
 
-    def get_figures(self, type_val: int):
+    def get_figures(self, type_val: int) -> List[Figure]:
         """
         Getter for figures by type value
         :param type_val:
@@ -115,7 +115,6 @@ class CheckerBoard:
             rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
 
         :param input_string: input string "/"-separated
-        :returns: None
         """
         for row, element in enumerate(input_string.split('/')):
             index = 0
