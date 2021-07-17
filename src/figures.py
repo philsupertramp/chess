@@ -17,6 +17,12 @@ class FieldType:
     WHITE = 8
     BLACK = 16
 
+    @classmethod
+    def clear(cls, val: int):
+        if val - cls.BLACK > 0:
+            return val - cls.BLACK
+        return val - cls.WHITE
+
 
 def scale_figure(figure: pygame.Surface, canvas: pygame.Surface):
     ratio = (int(canvas.get_width() / 8), int(canvas.get_height() / 8))
@@ -68,7 +74,7 @@ class DirectionMixin:
 
         res = list()
         for _x in range(1, length + 1):
-            res.extend([(x+_x, y+_x), (x-_x, y-_x), (x-_x, y+_x), (x+_x, y-_x)])
+            res.extend([(x + _x, y + _x), (x - _x, y - _x), (x - _x, y + _x), (x + _x, y - _x)])
         return list(set(filter(lambda val: val[0] >= 0 and val[1] >= 0 and abs(val[0]) < 8 and abs(val[1]) < 8, res)))
 
     @classmethod
@@ -92,6 +98,7 @@ class Figure(DirectionMixin):
         self.has_moved = False
         self.can_jump = False
         self.en_passant = False
+        self.checked_en_passant = False
         # self.allowed_moves: List[Tuple[int, int]] = list()
 
     @property
@@ -223,15 +230,6 @@ class Figure(DirectionMixin):
 
 
 class Pawn(Figure):
-    """
-    TODO:
-    - en passant-Rule is pretty fucked up, but here's how it works
-        - previous move was opponent pawn
-        - previous pawn moved 2 steps
-        - self is allowed to move to field in between opponents last move and checks opponents pawn
-        i.e. moves: Pc7–c5 pd5-c6 -> Pc5 checked
-    """
-
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.PAWN
@@ -251,13 +249,20 @@ class Pawn(Figure):
 
         # left
         if 0 < self.position[0] + direction < 8 and 0 < self.position[1] - direction < 8:
-            pos = (self.position[0] + direction, self.position[1] - direction)
+            pos = (self.position[0] + direction, self.position[1] + direction)
             fig = self.board.fields[pos[1]][pos[0]]
             if fig:
                 if fig.is_white != self.is_white:
                     moves.append(pos)
 
-        # TODO: add en passant rule here!
+        # check for en-passant rule neighbor pawns
+        en_passant_moves = [(self.position[0] - direction, self.position[1]),
+                            (self.position[0] + direction, self.position[1])]
+        for pos in en_passant_moves:
+            fig = self.board.fields[pos[1]][pos[0]]
+            if fig:
+                if fig.is_white != self.is_white and fig.en_passant:
+                    moves.append((pos[0], pos[1] + direction))
 
         moves += list(
             [(self.position[0], self.position[1] + direction)]
@@ -272,7 +277,14 @@ class Pawn(Figure):
         )
 
     def is_valid_check(self, move):
+        direction = -1 if self.is_white else 1
         # is unblocked move in column
+        if ((en_passant_fig := self.check_field(
+                (move[0],
+                 move[1] - direction))) and en_passant_fig.is_white != self.is_white and en_passant_fig.en_passant):
+            self.checked_en_passant = True
+            return True
+
         return (
                 abs(self.position[0] - move[0]) == 1
                 and abs(move[1] - self.position[1]) == 1
@@ -290,8 +302,10 @@ class Pawn(Figure):
 
     def move(self, new_pos) -> bool:
         pos = self.position
-        dist = new_pos[0] - pos[0], new_pos[1] - pos[1]
         allowed = super().move(new_pos)
+
+        if allowed:
+            self.en_passant = abs(new_pos[1] - pos[1]) == 2
 
         if (self.is_white and new_pos[1] == 0) or (not self.is_white and new_pos[1] == 7):
             # we're on the other side
