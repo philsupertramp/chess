@@ -10,9 +10,6 @@ from src.screen import screen
 
 class CheckerBoard:
     fields: List[List[Optional[Figure]]] = list(list())
-    field_objects: List = list()
-    elem_width: int = 0
-    elem_height: int = 0
     figure_changes: List[FigureChange] = list()
 
     def __init__(self, display: pygame.Surface):
@@ -60,6 +57,7 @@ class CheckerBoard:
         for figure_change in self.figure_changes:
             pos = figure_change.prev_figure.position
             self.fields[pos[1]][pos[0]] = figure_change.new_figure
+        self.figure_changes.clear()
 
     def reset_en_passant(self, is_white: bool) -> None:
         """

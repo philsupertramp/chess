@@ -339,17 +339,15 @@ class King(Figure):
 
     def get_castles(self) -> List[Tuple[int, int]]:
         rooks = self.board.get_figures(FieldType.ROOK | (FieldType.WHITE if self.is_white else FieldType.BLACK))
-        rooks = list(filter(lambda r: not r.has_moved and abs(self.position[0] - r.position[0]) != abs(self.position[1] - r.position[1]), rooks))
+        rooks = list(filter(lambda r: not r.has_moved and self.position[1] == r.position[1], rooks))
         out = list()
-        not_rook = False
         for rook in rooks:
-            for x in range(self.position[0], rook.position[0], sign(self.position[0] - rook.position[0])):
-                for y in range(self.position[1], rook.position[1], sign(self.position[1] - rook.position[1])):
-                    fig = self.check_field((x, y))
-                    if fig is not None:
-                        not_rook = True
-                        break
-                if not_rook:
+            not_rook = False
+            sign_x = sign(rook.position[0] - self.position[0])
+            for x in range(self.position[0] + sign_x, rook.position[0], sign_x):
+                fig = self.check_field((x, self.position[1]))
+                if fig is not None:
+                    not_rook = True
                     break
             if not not_rook:
                 out.append(rook.position)
@@ -360,6 +358,14 @@ class King(Figure):
 
     def checkmate(self) -> bool:
         return True
+
+    def move(self, new_pos: Tuple[int, int]) -> bool:
+        moved = super().move(new_pos)
+        self.can_castle = not moved
+        return moved
+
+    def is_move_allowed(self, move: Tuple[int, int]) -> bool:
+        return super().is_move_allowed(move)
 
 
 class Rook(Figure):

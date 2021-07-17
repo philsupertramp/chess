@@ -71,7 +71,7 @@ class TurnHistory:
         else:
             self.last_move += '—'
 
-        self.last_move += self.pos_to_string(tuple(reversed(move)))
+        self.last_move += self.pos_to_string(move)
 
         if prev_fig and prev_fig.checkmate():
             self.last_move += '#'

@@ -156,7 +156,7 @@ class Game:
             prev_fig_pos = (old_pos[1] if self.selected_figure.checked_en_passant else rows, cols)
             prev_fig = self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]]
             self.selected_figure.checked_en_passant = False
-            self.history.record(self.selected_figure, old_pos, (rows, cols), prev_fig)
+            self.history.record(self.selected_figure, old_pos, (cols, rows), prev_fig)
             if prev_fig and prev_fig.checkmate():
                 self.running = False
                 print(f'Game over {"white" if self.is_white_turn else "black"} wins.')
