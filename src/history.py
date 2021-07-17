@@ -19,6 +19,34 @@ class TurnHistory:
     def __init__(self):
         self.prev_was_pawn = False
 
+    @staticmethod
+    def figure_move_to_string(figure, move):
+        last_move = ''
+        if figure.is_white:
+            figure_manipulator = 'lower'
+        else:
+            figure_manipulator = 'upper'
+
+        figure_type = FieldType.clear(figure.type)
+        if figure_type == FieldType.KING:
+            last_move += getattr('k', figure_manipulator)()
+        elif figure_type == FieldType.QUEEN:
+            last_move += getattr('q', figure_manipulator)()
+        elif figure_type == FieldType.ROOK:
+            last_move += getattr('r', figure_manipulator)()
+        elif figure_type == FieldType.KNIGHT:
+            last_move += getattr('k', figure_manipulator)()
+        elif figure_type == FieldType.PAWN:
+            last_move += getattr('p', figure_manipulator)()
+        elif figure_type == FieldType.BISHOP:
+            last_move += getattr('b', figure_manipulator)()
+
+        return last_move + TurnHistory.pos_to_string(move)
+
+    @staticmethod
+    def pos_to_string(move):
+        return chr((move[0]) + 97) + str((8 - move[1]))
+
     def record(self, figure, old_pos, move, prev_fig):
         """
         Records Figure moved from [figure.position] [x] [move]
@@ -36,37 +64,14 @@ class TurnHistory:
 
         self.prev_was_pawn = figure.type == (FieldType.PAWN + FieldType.WHITE if figure.is_white else FieldType.BLACK)
 
-        self.last_move = ''
-        if figure.is_white:
-            figure_manipulator = 'lower'
-        else:
-            figure_manipulator = 'upper'
-
-        figure_type = figure.type - (FieldType.WHITE if figure.is_white else FieldType.BLACK)
-        if figure_type == FieldType.KING:
-            self.last_move += getattr('k', figure_manipulator)()
-        elif figure_type == FieldType.QUEEN:
-            self.last_move += getattr('q', figure_manipulator)()
-        elif figure_type == FieldType.ROOK:
-            self.last_move += getattr('r', figure_manipulator)()
-        elif figure_type == FieldType.KNIGHT:
-            self.last_move += getattr('k', figure_manipulator)()
-        elif figure_type == FieldType.PAWN:
-            self.last_move += getattr('p', figure_manipulator)()
-        elif figure_type == FieldType.BISHOP:
-            self.last_move += getattr('b', figure_manipulator)()
-
-        self.last_move += chr((8 - old_pos[0]) + 97)
-        self.last_move += str((8 - old_pos[1]))
-        self.turns.append(Turn(reversed(old_pos), move))
+        self.last_move = self.figure_move_to_string(figure, old_pos)
 
         if prev_fig:
             self.last_move += 'x'
         else:
             self.last_move += '—'
 
-        self.last_move += chr((8 - move[1]) + 97)
-        self.last_move += str((8 - move[0]))
+        self.last_move += self.pos_to_string(tuple(reversed(move)))
 
         if prev_fig and prev_fig.checkmate():
             self.last_move += '#'
@@ -81,6 +86,8 @@ class TurnHistory:
         if '#' in self.data:
             print(self.data)
             self.is_final = True
+
+        self.turns.append(Turn(old_pos, move))
 
     def save(self, filename):
         with open(filename, 'w') as file:

@@ -12,8 +12,11 @@ class Screen:
         return cls(pygame.display.set_mode(size, pygame.RESIZABLE | pygame.NOFRAME))
 
     def draw_text(self, text, position):
-        text_surface = self.font.render(text, False, (0, 0, 0))
-        self.blit(text_surface, position)
+        self.draw_text_to_surface(text, position, self.window)
+
+    def draw_text_to_surface(self, text, position, surface):
+        text_surface = self.font.render(text, True, (0, 0, 0))
+        surface.blit(text_surface, position)
 
     def fill(self, color):
         self.window.fill(color)
