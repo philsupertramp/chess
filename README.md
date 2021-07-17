@@ -34,3 +34,10 @@ Run the game in 2P mode
 ```shell
 python main.py
 ```
+
+## Development
+
+clone the repository and install the dependencies as described before.
+
+### Note:
+- Do not, and I repeat **not** use Pawn-d4 as a first step for testing. **This pawn is on the (4,4)-tile and will always work!**

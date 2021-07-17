@@ -230,6 +230,7 @@ class Game:
             self.handle_game_events([handle_next_step])
 
             # TODO: add some interruptable timeout
+            time.sleep(1)
 
 
 if __name__ == '__main__':
