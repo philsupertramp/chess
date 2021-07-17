@@ -32,6 +32,19 @@ class CheckerBoard:
         self.canvas = canvas
         self.init_empty_field()
 
+    def get_figures(self, type_val: int):
+        """
+        Getter for figures by type value
+        :param type_val:
+        :return:
+        """
+        figures = list()
+        for col in self.fields:
+            for cell in col:
+                if cell and cell.type == type_val:
+                    figures.append(cell)
+        return figures
+
     def reset(self) -> None:
         """
         Resets board content

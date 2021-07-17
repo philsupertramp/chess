@@ -330,10 +330,30 @@ class King(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
         self.type |= FieldType.KING
+        self.can_castle = True
 
     @property
     def allowed_moves(self) -> List[Tuple[int, int]]:
-        return self.get_diagonals(self.position, 1) + self.get_lines(self.position, 1)
+        castle_positions = self.get_castles() if self.can_castle else []
+        return castle_positions + self.get_diagonals(self.position, 1) + self.get_lines(self.position, 1)
+
+    def get_castles(self) -> List[Tuple[int, int]]:
+        rooks = self.board.get_figures(FieldType.ROOK | (FieldType.WHITE if self.is_white else FieldType.BLACK))
+        rooks = list(filter(lambda r: not r.has_moved and abs(self.position[0] - r.position[0]) != abs(self.position[1] - r.position[1]), rooks))
+        out = list()
+        not_rook = False
+        for rook in rooks:
+            for x in range(self.position[0], rook.position[0], sign(self.position[0] - rook.position[0])):
+                for y in range(self.position[1], rook.position[1], sign(self.position[1] - rook.position[1])):
+                    fig = self.check_field((x, y))
+                    if fig is not None:
+                        not_rook = True
+                        break
+                if not_rook:
+                    break
+            if not not_rook:
+                out.append(rook.position)
+        return out
 
     def __str__(self):
         return f'{"white " if self.is_white else "black "}King: {self.position}'
