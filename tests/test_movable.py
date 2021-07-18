@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 
-from src.figures import DirectionMixin
+from src.movable import DirectionMixin
 
 
 class DirectionCheckMixinTestCase(TestCase):
