@@ -169,8 +169,10 @@ class Figure(DirectionMixin):
             # idk, there's no other way then providing an arbitrary object here
             return Figure((-1, -1), self.is_white, self.board)
 
+        figure_at_pos = self.check_field(move)
+
         if self.can_jump:
-            return None
+            return figure_at_pos
 
         diff_x = move[0] - self.position[0]
         diff_y = move[1] - self.position[1]
@@ -194,7 +196,7 @@ class Figure(DirectionMixin):
                 if fig := self.check_field((self.position[0], self.position[1] + factor * i)):
                     return fig
 
-        return self.check_field(move)
+        return figure_at_pos
 
     def move(self, new_pos: Tuple[int, int]) -> bool:
         """
@@ -333,8 +335,8 @@ class Pawn(Figure):
                     moves.append(pos)
 
         # check for en-passant rule neighbor pawns
-        en_passant_moves = [(self.position[0] - direction, self.position[1]),
-                            (self.position[0] + direction, self.position[1])]
+        en_passant_moves = self.clean_target_fields([(self.position[0] - direction, self.position[1]),
+                                                     (self.position[0] + direction, self.position[1])])
         for pos in en_passant_moves:
             fig = self.board.fields[pos[1]][pos[0]]
             if fig:

@@ -131,7 +131,7 @@ class CheckerBoard:
             col = 0
             while index < len(element):
                 try:
-                    col = int(element[index]) - 1
+                    col += int(element[index]) + 1
                     index += 1
                 except ValueError:
                     if col == 8:

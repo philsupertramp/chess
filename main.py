@@ -4,6 +4,7 @@ import pygame
 from pygame.event import Event
 
 from src.board import CheckerBoard
+from src.helpers import sign
 from src.screen import screen
 
 from src.history import TurnHistory
@@ -154,8 +155,10 @@ class Game:
 
         if old_pos != (cols, rows) and self.selected_figure.move((cols, rows)):
             prev_fig_pos = (rows, cols)
+            # en-passant
             if self.selected_figure.checked_en_passant:
                 prev_fig_pos = (old_pos[1], prev_fig_pos[1])
+            # castling
             elif self.selected_figure.castles_with is not None:
                 prev_fig_pos = self.selected_figure.castles_with.position
 
@@ -172,9 +175,14 @@ class Game:
                 self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]] = None
             else:
                 # perform switch during castling
-                self.board.fields[old_pos[1]][old_pos[0]] = self.selected_figure.castles_with
+                direction = sign(self.selected_figure.position[0] - old_pos[0])
+                self.board.fields[old_pos[1]][cols - 2 * direction] = self.selected_figure.castles_with
+                self.selected_figure.castles_with.position = (cols - 2 * direction, old_pos[1])
+                cols -= direction
 
+            self.selected_figure.position = (cols, rows)
             self.board.fields[rows][cols] = self.selected_figure
+
             if hasattr(self.selected_figure, 'needs_render_selector'):
                 self.needs_render_selector = self.selected_figure.board.needs_render_selector
                 # always delete the temporary value. aint no snitch, but try keepin it immutable, fam
