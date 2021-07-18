@@ -431,6 +431,7 @@ class King(Figure):
         out = list()
         for rook in rooks:
             not_rook = False
+            # TODO: allow vertical, if explicitly configured
             sign_x = sign(rook.position[0] - self.position[0])
             for x in range(self.position[0] + sign_x, rook.position[0], sign_x):
                 fig = self.check_field((x, self.position[1]))

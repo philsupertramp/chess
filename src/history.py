@@ -49,6 +49,9 @@ class TurnHistory:
 
     def record(self, figure, old_pos, move, prev_fig):
         """
+        #TODO: Add castling parameter.
+               Notation is: 0-0 kingside rook 0-0-0 queenside rook color doesn't matter. it's obvious due to turn
+
         Records Figure moved from [figure.position] [x] [move]
         might check prev_fig while doing so
         could also end up in checkmate, appends # at end

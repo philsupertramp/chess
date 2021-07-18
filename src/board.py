@@ -45,9 +45,13 @@ class CheckerBoard:
     def reset(self) -> None:
         """
         Resets board content
+
+        some examples:
+
+        only pawns and kings: '4k/PPPPPPPP/8/8/8/8/pppppppp/4K'
+        castling: 'r3k2r/8/8/8/8/8/8/R3K2R'
         """
         self.fields = [[None for _ in range(8)] for _ in range(8)]
-        # only pawns and kings: '4k/PPPPPPPP/8/8/8/8/pppppppp/4K'
         self.load_game_from_string('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def process_promotions(self):
