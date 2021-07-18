@@ -1,8 +1,8 @@
 import pygame
 
-from src.colors import BLACK, WHITE
+from src.backends.colors import BLACK, WHITE
 from src.figures import scale_figure, FieldType, Queen, Rook, Knight, Bishop
-from src.screen import screen
+from src.backends.screen import screen
 
 
 class FigureSelector:

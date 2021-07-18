@@ -328,21 +328,3 @@ class Knight(Figure):
 
     def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Knight: {self.position}'
-
-
-class FigureChange:
-    def __init__(self, figure: 'Figure', new_figure_type: Union[FieldType, int]) -> None:
-        self.prev_figure = figure
-        self.new_figure: Optional[Figure] = None
-        self.set_new_figure(new_figure_type)
-
-    def set_new_figure(self, figure_type: int) -> None:
-        is_white = self.prev_figure.is_white
-        if figure_type == FieldType.QUEEN:
-            self.new_figure = Queen(self.prev_figure.position, is_white=is_white, _board=self.prev_figure.board)
-        elif figure_type == FieldType.KNIGHT:
-            self.new_figure = Knight(self.prev_figure.position, is_white=is_white, _board=self.prev_figure.board)
-        elif figure_type == FieldType.ROOK:
-            self.new_figure = Rook(self.prev_figure.position, is_white=is_white, _board=self.prev_figure.board)
-        elif figure_type == FieldType.BISHOP:
-            self.new_figure = Bishop(self.prev_figure.position, is_white=is_white, _board=self.prev_figure.board)

@@ -1,12 +1,19 @@
 from typing import Optional, List
 
 from src.figures import FieldType
+from src.helpers import sign
 
 
 class Turn:
-    def __init__(self, start, end):
+    def __init__(self, start, end, is_castling, fig):
         self.start = start
         self.end = end
+        self.is_castling = is_castling
+        self.figure = fig
+
+    def __str__(self):
+        return (TurnHistory.figure_move_to_string(self.figure, self.start)
+                + f'–{TurnHistory.pos_to_string(self.end)}')
 
 
 class TurnHistory:
@@ -44,14 +51,15 @@ class TurnHistory:
         return last_move + TurnHistory.pos_to_string(move)
 
     @staticmethod
+    def string_to_pos(move: str):
+        return ord(move[0]) - 97, 8 - int(move[1])
+
+    @staticmethod
     def pos_to_string(move):
         return chr((move[0]) + 97) + str((8 - move[1]))
 
     def record(self, figure, old_pos, move, prev_fig):
         """
-        #TODO: Add castling parameter.
-               Notation is: 0-0 kingside rook 0-0-0 queenside rook color doesn't matter. it's obvious due to turn
-
         Records Figure moved from [figure.position] [x] [move]
         might check prev_fig while doing so
         could also end up in checkmate, appends # at end
@@ -60,9 +68,23 @@ class TurnHistory:
         :param old_pos:
         :param move:
         :param prev_fig:
+        :param is_castling:
         :return:
         """
         if self.is_final:
+            return
+
+        is_castling: bool = figure.castles_with is not None
+        self.turns.append(Turn(old_pos, move, is_castling, figure))
+
+        if is_castling:
+            if sign(move[0] - old_pos[0]) == 1:
+                # kingside
+                self.last_move = '0-0 '
+            else:
+                # queenside
+                self.last_move = '0-0-0 '
+            self.data += self.last_move
             return
 
         self.prev_was_pawn = figure.type == (FieldType.PAWN + FieldType.WHITE if figure.is_white else FieldType.BLACK)
@@ -89,8 +111,6 @@ class TurnHistory:
         if '#' in self.data:
             print(self.data)
             self.is_final = True
-
-        self.turns.append(Turn(old_pos, move))
 
     def save(self, filename):
         with open(filename, 'w') as file:

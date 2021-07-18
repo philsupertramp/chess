@@ -41,6 +41,11 @@ Run the game in 2P mode
 python main.py
 ```
 
+Run the game in headless console mode
+```shell
+python main.py --headless
+```
+
 ## Development
 
 clone the repository and install the dependencies as described before.
