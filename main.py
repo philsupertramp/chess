@@ -166,9 +166,14 @@ class Game:
                 self.running = False
                 print(f'Game over {"white" if self.is_white_turn else "black"} wins.')
 
-            self.board.fields[old_pos[1]][old_pos[0]] = None
-            # to ensure en-passant pawns are deleted
-            self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]] = None
+            if not self.selected_figure.castles_with:
+                self.board.fields[old_pos[1]][old_pos[0]] = None
+                # to ensure en-passant pawns are deleted
+                self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]] = None
+            else:
+                # perform switch during castling
+                self.board.fields[old_pos[1]][old_pos[0]] = self.selected_figure.castles_with
+
             self.board.fields[rows][cols] = self.selected_figure
             if hasattr(self.selected_figure, 'needs_render_selector'):
                 self.needs_render_selector = self.selected_figure.board.needs_render_selector
