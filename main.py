@@ -174,7 +174,6 @@ class Game:
                 print(f'Game over {"white" if self.is_white_turn else "black"} wins.')
 
             if not self.selected_figure.castles_with:
-                self.board.fields[old_pos[1]][old_pos[0]] = None
                 # to ensure en-passant pawns are deleted
                 self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]] = None
             else:
@@ -184,6 +183,7 @@ class Game:
                 self.selected_figure.castles_with.position = (cols - 2 * direction, old_pos[1])
                 cols -= direction
 
+            self.board.fields[old_pos[1]][old_pos[0]] = None
             self.selected_figure.position = (cols, rows)
             self.board.fields[rows][cols] = self.selected_figure
 

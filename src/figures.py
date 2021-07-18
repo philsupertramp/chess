@@ -78,101 +78,21 @@ def rescale_images(canvas: pygame.Surface) -> None:
 
 
 class Figure(Movable):
-    def __init__(self, pos: Tuple[int, int], is_white: bool, _board: 'CheckerBoard'):
-        self.position = pos  # careful! this one is inverted position in board (x == rows, y == cols)
+    def __init__(self, pos: Tuple[int, int], is_white: bool, _board: 'CheckerBoard'):  # careful! this one is inverted position in board (x == rows, y == cols)
         self.type: int = FieldType.WHITE if is_white else FieldType.BLACK
         self.is_white: bool = is_white
-        self.board: 'CheckerBoard' = _board
         self.is_selected = False
-        self.has_moved = False
-        self.can_jump = False
         self.en_passant = False
         self.checked_en_passant = False
         self.castles_with: Optional[Figure] = None
+        super().__init__(pos, _board)
         # self.allowed_moves: List[Tuple[int, int]] = list()
-
-    @property
-    def allowed_moves(self) -> List[Tuple[int, int]]:
-        """
-        Helper method to get all available moves of a figure
-
-        :return: list of possible moves
-        """
-        raise NotImplementedError
-
-    def check_field(self, move: Tuple[int, int]) -> Optional['Figure']:
-        """
-        Helper to detect figure on given tile
-        """
-        return self.board.fields[move[1]][move[0]]
-
-    def can_move(self, move: Tuple[int, int]) -> Optional['Figure']:
-        """
-        Determines whether a move can be performed or not
-
-        :param move: the actual tile location to move to
-        :return: Figure or None, None is considered good and successful
-        """
-        if move not in self.allowed_moves:
-            # idk, there's no other way then providing an arbitrary object here
-            return Figure((-1, -1), self.is_white, self.board)
-
-        figure_at_pos = self.check_field(move)
-
-        if self.can_jump:
-            return figure_at_pos
-
-        diff_x = move[0] - self.position[0]
-        diff_y = move[1] - self.position[1]
-
-        if abs(diff_x) > 0 and abs(diff_x) == abs(diff_y):
-            # diagonal move
-            factors = (sign(diff_x), sign(diff_y))
-            for i in range(1, min(abs(diff_x) + 1, 8)):
-                if fig := self.check_field((self.position[0] + factors[0] * i, self.position[1] + factors[1] * i)):
-                    return fig
-        elif abs(diff_x) > 0:
-            # x direction
-            factor = (-1) if diff_x < 0 else 1
-            for i in range(1, min(abs(diff_x) + 1, 8)):
-                if fig := self.check_field((self.position[0] + factor * i, self.position[1])):
-                    return fig
-        elif abs(diff_y) > 0:
-            # y direction
-            factor = (-1) if diff_y < 0 else 1
-            for i in range(1, min(abs(diff_y) + 1, 8)):
-                if fig := self.check_field((self.position[0], self.position[1] + factor * i)):
-                    return fig
-
-        return figure_at_pos
-
-    def move(self, new_pos: Tuple[int, int]) -> bool:
-        """
-        Moves a figure to a new given position, checks and return success
-
-        :param new_pos: position to move the figure to, potentially
-        :return: successfully moved figure
-        """
-        if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
-            self.position = new_pos
-            self.has_moved = True
-            return True
-        return False
 
     def checkmate(self) -> bool:
         """
         Method to signalize checkmate, this is actually only implemented in King
         """
         return False
-
-    def is_move_allowed(self, move: Tuple[int, int]) -> bool:
-        """
-        Tests if a move is allowed to be performed
-
-        :param move: potential tile to move to
-        """
-        fig = self.can_move(move)
-        return not fig or (fig.position[0] == move[0] and fig.position[1] == move[1] and fig.is_white != self.is_white)
 
     def draw(self, canvas: pygame.Surface) -> None:
         """
@@ -207,53 +127,6 @@ class Figure(Movable):
             pygame.draw.rect(mask, (0, 0, 0, 100), pos)
 
         canvas.blit(mask, mask.get_rect())
-
-    def locked(self) -> bool:
-        """
-        :return: False if figure would allow checkmate
-        """
-        positions = self.__get_checkmate_positions()
-        return self.position in positions
-
-    def __get_checkmate_positions(self) -> List[Tuple[int, ...]]:
-        """
-        TODO: fix me
-        """
-        own_king_pos: Tuple[int, int] = (-1, -1)
-        for row in self.board.fields:
-            for cell in row:
-                if not cell:
-                    continue
-                if cell.type - FieldType.KING == (FieldType.WHITE if self.is_white else FieldType.BLACK):
-                    own_king_pos = cell.position
-
-        assert own_king_pos != (-1, -1), 'Did not find King... Something is wrong!'
-
-        checkmate_positions: List[Tuple[int, ...]] = list()
-        for row in self.board.fields:
-            for cell in row:
-                if not cell or cell.is_white == self.is_white:
-                    continue
-                target_fields = cell.allowed_moves
-                if own_king_pos in target_fields:
-                    for x in range(abs(own_king_pos[0] - cell.position[0]) + 1):
-                        for y in range(abs(own_king_pos[1] - cell.position[1]) + 1):
-                            checkmate_positions.append((own_king_pos[0] + x, own_king_pos[1] + y))
-        return checkmate_positions
-
-    @staticmethod
-    def clean_target_fields(fields: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-        """
-        Drops fields not present on the 8x8 board
-        :param fields: list of fields to clean
-        :return: cleaned list of provided fields
-        """
-        cleaned_fields = []
-        for field in fields:
-            if field[0] < 0 or field[1] < 0 or field[0] > 7 or field[1] > 7:
-                continue
-            cleaned_fields.append(field)
-        return cleaned_fields
 
 
 class Pawn(Figure):
@@ -318,7 +191,7 @@ class Pawn(Figure):
         return (
             abs(self.position[0] - move[0]) == 1
             and abs(move[1] - self.position[1]) == 1
-            and ((fig := self.can_move(move)) and fig.is_white != self.is_white)
+            and ((fig := self.can_move(move)) is not None and fig.is_white != self.is_white)
         )
 
     def is_valid_move(self, move: Tuple[int, int]) -> bool:
