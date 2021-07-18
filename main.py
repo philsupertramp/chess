@@ -153,7 +153,12 @@ class Game:
         old_pos = self.selected_figure.position
 
         if old_pos != (cols, rows) and self.selected_figure.move((cols, rows)):
-            prev_fig_pos = (old_pos[1] if self.selected_figure.checked_en_passant else rows, cols)
+            prev_fig_pos = (rows, cols)
+            if self.selected_figure.checked_en_passant:
+                prev_fig_pos = (old_pos[1], prev_fig_pos[1])
+            elif self.selected_figure.castles_with is not None:
+                prev_fig_pos = self.selected_figure.castles_with.position
+
             prev_fig = self.board.fields[prev_fig_pos[0]][prev_fig_pos[1]]
             self.selected_figure.checked_en_passant = False
             self.history.record(self.selected_figure, old_pos, (cols, rows), prev_fig)
@@ -181,6 +186,7 @@ class Game:
             self.selected_figure = None
         self.board.process_promotions()
         self.board.reset_en_passant(self.is_white_turn)
+        self.board.reset_castles(self.is_white_turn)
 
     def handle_mouse_click(self, cols: int, rows: int) -> None:
         """

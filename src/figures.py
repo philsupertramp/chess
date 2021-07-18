@@ -25,14 +25,26 @@ class FieldType:
 
 
 def scale_figure(figure: pygame.Surface, canvas: pygame.Surface) -> pygame.Surface:
+    """
+    Helper method to rescale figure texture. A figure will be 1/8th of canvas' dimensions
+
+    :param figure: figure texture/surface
+    :param canvas: the canvas to scale the figure with
+    :return:
+    """
     ratio = (int(canvas.get_width() / 8), int(canvas.get_height() / 8))
     return pygame.transform.scale(figure, ratio)
 
 
+# global state for figure textures
 figures = dict()
 
 
 def reload_images() -> None:
+    """
+    Loads unscaled figure textures into memory
+    :return:
+    """
     global figures
 
     figures = {
@@ -53,6 +65,12 @@ def reload_images() -> None:
 
 
 def rescale_images(canvas: pygame.Surface) -> None:
+    """
+    Helper method to rescale all figure-textures based on a given canvas.
+    Each figure will be scaled 1/8th of the canvas input
+
+    :param canvas: canvas to scale based on
+    """
     reload_images()
     global figures
     figures = {key: scale_figure(figure, canvas) for key, figure in figures.items()}
@@ -60,15 +78,32 @@ def rescale_images(canvas: pygame.Surface) -> None:
 
 class DirectionMixin:
     @classmethod
-    def is_diagonal(cls, new_pos: Tuple[int, int], max_length: int = 1) -> bool:
-        return (abs(new_pos[0]) + abs(new_pos[1])) / 2 == abs(new_pos[0]) and abs(new_pos[0]) <= max_length
+    def is_diagonal(cls, new_pos: Tuple[int, int]) -> bool:
+        """
+        Helper to detect if move is diagonal
+
+        :param new_pos:
+        :return: move is diagonal
+        """
+        return (abs(new_pos[0]) + abs(new_pos[1])) / 2 == abs(new_pos[0])
 
     @classmethod
-    def is_line(cls, new_pos: Tuple[int, int], max_length: int) -> bool:
-        return (new_pos[0] == 0 or new_pos[1] == 0) and abs(new_pos[0]) <= max_length
+    def is_line(cls, new_pos: Tuple[int, int]) -> bool:
+        """
+        Helper to detect if move is straight line
+        :param new_pos:
+        :return: move is line
+        """
+        return new_pos[0] == 0 or new_pos[1] == 0
 
     @classmethod
     def get_diagonals(cls, pos: Tuple[int, int], length: int) -> List[Tuple[int, int]]:
+        """
+        Helper to create diagonal moves
+        :param pos: starting pos
+        :param length: length of diagonals starting at `pos`
+        :return: list of diagonal tiles starting from `pos`
+        """
         x = pos[0]
         y = pos[1]
 
@@ -79,6 +114,12 @@ class DirectionMixin:
 
     @classmethod
     def get_lines(cls, pos: Tuple[int, int], length: int) -> List[Tuple[int, int]]:
+        """
+        Helper to create straight line moves
+        :param pos: starting pos
+        :param length: length of lines starting at `pos`
+        :return: list of tiles in straight lines starting from `pos`
+        """
         x = pos[0]
         y = pos[1]
 
@@ -99,13 +140,22 @@ class Figure(DirectionMixin):
         self.can_jump = False
         self.en_passant = False
         self.checked_en_passant = False
+        self.castles_with: Optional[Figure] = None
         # self.allowed_moves: List[Tuple[int, int]] = list()
 
     @property
     def allowed_moves(self) -> List[Tuple[int, int]]:
+        """
+        Helper method to get all available moves of a figure
+
+        :return: list of possible moves
+        """
         raise NotImplementedError
 
     def check_field(self, move: Tuple[int, int]) -> Optional['Figure']:
+        """
+        Helper to detect figure on given tile
+        """
         return self.board.fields[move[1]][move[0]]
 
     def can_move(self, move: Tuple[int, int]) -> Optional['Figure']:
@@ -147,6 +197,12 @@ class Figure(DirectionMixin):
         return self.check_field(move)
 
     def move(self, new_pos: Tuple[int, int]) -> bool:
+        """
+        Moves a figure to a new given position, checks and return success
+
+        :param new_pos: position to move the figure to, potentially
+        :return: successfully moved figure
+        """
         if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.position = new_pos
             self.has_moved = True
@@ -154,13 +210,26 @@ class Figure(DirectionMixin):
         return False
 
     def checkmate(self) -> bool:
+        """
+        Method to signalize checkmate, this is actually only implemented in King
+        """
         return False
 
     def is_move_allowed(self, move: Tuple[int, int]) -> bool:
+        """
+        Tests if a move is allowed to be performed
+
+        :param move: potential tile to move to
+        """
         fig = self.can_move(move)
         return not fig or (fig.position[0] == move[0] and fig.position[1] == move[1] and fig.is_white != self.is_white)
 
     def draw(self, canvas: pygame.Surface) -> None:
+        """
+        Renders figure (incl. allowed moves) onto given canvas
+
+        :param canvas: canvas to draw to
+        """
         if self.type == FieldType.EMPTY:
             return
 
@@ -176,6 +245,11 @@ class Figure(DirectionMixin):
         canvas.blit(figure, (scale[0] * self.position[0], scale[1] * self.position[1]))
 
     def draw_allowed_moves(self, canvas: pygame.Surface) -> None:
+        """
+        Helper method to render allowed moves of a figure onto a canvas
+
+        :param canvas: canvas to draw to
+        """
         square_size = int(canvas.get_width() / 8), int(canvas.get_height() / 8)
         mask = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
         for move in self.allowed_moves:
@@ -192,6 +266,9 @@ class Figure(DirectionMixin):
         return self.position in positions
 
     def __get_checkmate_positions(self) -> List[Tuple[int, ...]]:
+        """
+        TODO: fix me
+        """
         own_king_pos: Tuple[int, int] = (-1, -1)
         for row in self.board.fields:
             for cell in row:
@@ -217,9 +294,9 @@ class Figure(DirectionMixin):
     @staticmethod
     def clean_target_fields(fields: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         """
-        Drops fields not present on the board
-        :param fields:
-        :return:
+        Drops fields not present on the 8x8 board
+        :param fields: list of fields to clean
+        :return: cleaned list of provided fields
         """
         cleaned_fields = []
         for field in fields:
@@ -277,6 +354,9 @@ class Pawn(Figure):
         )
 
     def is_valid_check(self, move):
+        """
+        Test for diagonal, or en-passant check
+        """
         direction = -1 if self.is_white else 1
         # is unblocked move in column
         if ((en_passant_fig := self.check_field(
@@ -292,6 +372,9 @@ class Pawn(Figure):
         )
 
     def is_valid_move(self, move: Tuple[int, int]) -> bool:
+        """
+        Test for regular directed movement, either 2 tiles for unmoved pawns, or 1 tile for moved pawns
+        """
         # is unblocked move in column
         return ((self.position[0] - move[0]) == 0
                 and (abs(move[1] - self.position[1]) <= (1 if self.has_moved else 2))
@@ -301,6 +384,9 @@ class Pawn(Figure):
         return f'{"white " if self.is_white else "black "}Pawn: {self.position}'
 
     def move(self, new_pos: Tuple[int, int]) -> bool:
+        """
+        Overridden method to test for en-passant and figure promotions
+        """
         pos = self.position
         allowed = super().move(new_pos)
 
@@ -360,6 +446,11 @@ class King(Figure):
         return True
 
     def move(self, new_pos: Tuple[int, int]) -> bool:
+        castles = [c for c in self.get_castles() if new_pos[0] == c[0] and new_pos[1] == c[1]]
+        if len(castles) > 0:
+            self.castles_with = self.check_field(new_pos)
+            self.position = new_pos
+            return True
         moved = super().move(new_pos)
         self.can_castle = not moved
         return moved

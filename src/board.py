@@ -69,6 +69,16 @@ class CheckerBoard:
                 if cell and cell.is_white == is_white and cell.en_passant:
                     cell.en_passant = False
 
+    def reset_castles(self, is_white: bool) -> None:
+        """
+        Resets game state for castled kings
+        :param is_white: color to clean
+        """
+        for col in self.fields:
+            for cell in col:
+                if cell and cell.is_white == is_white and cell.castles_with:
+                    cell.castles_with = None
+
     def init_empty_field(self, with_text: bool = True) -> None:
         """
         Initializes empty checkerboard texture.
