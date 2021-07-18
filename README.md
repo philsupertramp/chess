@@ -19,6 +19,12 @@ The project will eventually contain the following features (ticked ones implemen
 - [ ] can train own model based on **your** moves!
 
 
+## Interesting problems to analyze
+### How would the model behave in such situation:
+- King on `e1`, Pawn `e2` moves up until `e8` and gets promoted into Rook
+    - Enable underpromoted Rook castling using `Game(underpromoted_castling=True)`
+
+
 ### Usage:
 clone the project
 ```shell

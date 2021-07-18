@@ -24,12 +24,13 @@ class Game:
     running = True
     is_white_turn = True
 
-    def __init__(self) -> None:
+    def __init__(self, underpromoted_castling: bool = False) -> None:
         rescale_images(screen)
         self.canvas = pygame.Surface((screen.get_size()[0], screen.get_size()[1] - 20))
         self.board = CheckerBoard(self.canvas)
         self.figure_selector = FigureSelector()
         self.needs_render_selector = False
+        self.underpromoted_castling = underpromoted_castling
 
     def run(self) -> None:
         """
@@ -116,6 +117,9 @@ class Game:
             print('Error selecting...\nRetry!')
         fig_class = self.figure_selector.select(rows * 2 + cols)
         figure = fig_class(self.selected_figure.position, is_white=self.selected_figure.is_white, _board=self.board)
+
+        # figure.has_moved disables/enables Rook's castling mechanics
+        figure.has_moved = not self.underpromoted_castling
         self.board.fields[self.selected_figure.position[1]][self.selected_figure.position[0]] = figure
         self.selected_figure = None
         self.needs_render_selector = False
