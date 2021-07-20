@@ -1,7 +1,7 @@
 import pygame
 
 from src.backends.colors import BLACK, WHITE
-from src.figures import scale_figure, FieldType, Queen, Rook, Knight, Bishop
+from src.figures import FieldType, Queen, Rook, Knight, Bishop
 from src.backends.screen import screen
 
 
@@ -34,29 +34,32 @@ class FigureSelector:
             return Bishop
 
     def populate_surfaces(self):
+        ratio = (int(screen.get_width() / 8), int(screen.get_height() / 8))
+        
+        def scale_figure(figure):
+            return pygame.transform.scale(figure, ratio)
+
         blacks = [
-            scale_figure(pygame.image.load('resources/rook.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/bishop.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/king.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/knight.png').convert_alpha(), screen),
+            scale_figure(pygame.image.load('resources/rook.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/bishop.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/king.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/knight.png').convert_alpha()),
         ]
         whites = [
-            scale_figure(pygame.image.load('resources/rook_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/bishop_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/king_w.png').convert_alpha(), screen),
-            scale_figure(pygame.image.load('resources/knight_w.png').convert_alpha(), screen),
+            scale_figure(pygame.image.load('resources/rook_w.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/bishop_w.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/king_w.png').convert_alpha()),
+            scale_figure(pygame.image.load('resources/knight_w.png').convert_alpha()),
         ]
-
-        scale = screen.get_width()/8, screen.get_height()/8
 
         self.white_surf.fill(BLACK)
         self.black_surf.fill(WHITE)
 
         for index, fig in enumerate(whites):
-            self.white_surf.blit(fig, ((index < 2) * scale[0], (index % 2) * scale[1]))
+            self.white_surf.blit(fig, ((index < 2) * ratio[0], (index % 2) * ratio[1]))
 
         for index, fig in enumerate(blacks):
-            self.black_surf.blit(fig, ((index < 2) * scale[0], (index % 2) * scale[1]))
+            self.black_surf.blit(fig, ((index < 2) * ratio[0], (index % 2) * ratio[1]))
 
     def rescale(self):
         cells = screen.get_width() / 4, screen.get_height() / 4

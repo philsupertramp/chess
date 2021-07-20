@@ -1,17 +1,17 @@
 from typing import Optional, List
 
-from src.figures import FieldType
-from src.helpers import sign
+from src.figures import FieldType, Figure
+from src.helpers import sign, Coords
 
 
 class Turn:
-    def __init__(self, start, end, is_castling, fig):
+    def __init__(self, start: Coords, end: Coords, is_castling: bool, fig: Figure) -> None:
         self.start = start
         self.end = end
         self.is_castling = is_castling
         self.figure = fig
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (TurnHistory.figure_move_to_string(self.figure, self.start)
                 + f'–{TurnHistory.pos_to_string(self.end)}')
 
@@ -27,7 +27,7 @@ class TurnHistory:
         self.prev_was_pawn = False
 
     @staticmethod
-    def figure_move_to_string(figure, move):
+    def figure_move_to_string(figure: Figure, move: Coords) -> str:
         last_move = ''
         if figure.is_white:
             figure_manipulator = 'lower'
@@ -51,14 +51,14 @@ class TurnHistory:
         return last_move + TurnHistory.pos_to_string(move)
 
     @staticmethod
-    def string_to_pos(move: str):
-        return ord(move[0]) - 97, 8 - int(move[1])
+    def string_to_pos(move: str) -> Coords:
+        return Coords(ord(move[0]) - 97, 8 - int(move[1]))
 
     @staticmethod
-    def pos_to_string(move):
-        return chr((move[0]) + 97) + str((8 - move[1]))
+    def pos_to_string(move: Coords) -> str:
+        return chr(move.x + 97) + str((8 - move.y))
 
-    def record(self, figure, old_pos, move, prev_fig):
+    def record(self, figure: Figure, old_pos: Coords, move: Coords, prev_fig: Figure) -> None:
         """
         Records Figure moved from [figure.position] [x] [move]
         might check prev_fig while doing so
@@ -78,7 +78,7 @@ class TurnHistory:
         self.turns.append(Turn(old_pos, move, is_castling, figure))
 
         if is_castling:
-            if sign(move[0] - old_pos[0]) == 1:
+            if sign(move.x - old_pos.x) == 1:
                 # kingside
                 self.last_move = '0-0 '
             else:

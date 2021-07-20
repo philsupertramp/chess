@@ -1,0 +1,8 @@
+# file contains turn history of
+# simple trap example
+
+pe2—e4 Pe7—e5
+qd1—h5 Kb8—c6
+bf1—c4 Kg8—f6
+qh5xf7 Ke8xf7
+bc4xf7#

@@ -1,0 +1,16 @@
+# file contains turn history of interesting game without strict rules
+# in regards to castling (western chess uses rule to prevent castling when
+# king would move into checkmate, I frankly didn't care at that time)
+# The game was played by me vs me while testing en passant, but
+# turned out to be an interesting example game to replay were black wins with
+# en passant and turns whites queenside castling into a nightmare.
+
+pb2—b4 Pd7—d5
+pa2—a4 Qd8—d6
+ra1—a3 Qd6xb4
+ra3—b3 Qb4xb3
+pc2xb3 Pd5—d4
+pe2—e4 Pd4xe3
+bf1—d3 Pe3xf2
+kg1—f3 Pf7—f5
+ke1xh1 Pf2xg1#

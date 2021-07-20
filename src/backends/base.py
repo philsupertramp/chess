@@ -1,9 +1,5 @@
 from unittest import mock
 
-import pygame
-
-from src.history import Turn
-
 
 class BaseBackend:
     canvas = None
@@ -52,8 +48,8 @@ class HeadlessBackend(BaseBackend):
         next_move = list(next_move)
         start = self.game.history.string_to_pos(next_move[:2])
         end = self.game.history.string_to_pos(next_move[2:])
-        self.game.handle_mouse_click(*start)
-        self.game.handle_mouse_click(*end)
+        self.game.handle_mouse_click(start.x, start.y)
+        self.game.handle_mouse_click(end.x, end.y)
 
     def render(self):
         print(self.game.history.last_move)

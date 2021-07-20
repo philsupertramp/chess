@@ -1,21 +1,18 @@
 from typing import List, Optional, Tuple
 
-import pygame
-
-from src.backends.colors import BLACK, WHITE
 from src.figures import Figure, King, Queen, Knight, Pawn, Bishop, Rook
-from src.helpers import sign
+from src.helpers import sign, Coords
 from src.history import TurnHistory
 
 
 class CheckerBoard:
     fields: List[List[Optional[Figure]]] = list(list())
 
-    def __init__(self, display: pygame.Surface, game) -> None:
+    def __init__(self, display: Optional['pygame.Surface'], game) -> None:
         # Game state
         self.game = game
         # Texture for simple rendering
-        self.empty_board: Optional[pygame.Surface] = None
+        self.empty_board: Optional['pygame.Surface'] = None
         # cell height and width
         self.cell_size: Optional[Tuple[int]] = None
         # pointer to currently selected figure
@@ -30,7 +27,7 @@ class CheckerBoard:
 
         self.reset()
 
-    def rescale(self, canvas: pygame.Surface) -> None:
+    def rescale(self, canvas: 'pygame.Surface') -> None:
         self.canvas = canvas
         self.init_empty_field_texture()
 
@@ -85,6 +82,8 @@ class CheckerBoard:
 
         Actually only renders black tiles on white background
         """
+        import pygame
+        from src.backends.colors import BLACK, WHITE
 
         # convert board size to cell size
         self.cell_size = self.canvas.get_width() / 8, self.canvas.get_height() / 8
@@ -108,10 +107,11 @@ class CheckerBoard:
             from src.backends.screen import screen
             for x in range(8):
                 for y in range(8):
-                    screen.draw_text_to_surface(TurnHistory.pos_to_string((x, y)), (x * self.cell_size[0], y * self.cell_size[1]), self.empty_board)
+                    screen.draw_text_to_surface(TurnHistory.pos_to_string(Coords(x, y)), (x * self.cell_size[0], y * self.cell_size[1]), self.empty_board)
 
     def load_game_from_string(self, input_string: str) -> None:
-        """do some magic input string parsing
+        """
+        do some magic input string parsing
 
         available types
         k: king
@@ -161,7 +161,7 @@ class CheckerBoard:
                 elif figure_type.lower() == 'r':
                     figure_class = Rook
 
-                self.fields[row][col-1] = figure_class((col-1, row), is_white=is_white, _board=self)
+                self.fields[row][col-1] = figure_class(Coords(col-1, row), is_white=is_white, _board=self)
                 index += 1
 
     def draw(self) -> None:
@@ -201,7 +201,6 @@ class CheckerBoard:
             else:
                 # unselect figure and print a picking error
                 color = "White" if is_white_turn else "Black"
-                print(f'{color} tried selecting {self.selected_figure}, not allowed.')
                 # reset picked figure
                 self.selected_figure = None
 
@@ -216,47 +215,49 @@ class CheckerBoard:
         :return: placement successful
         """
         old_pos = self.selected_figure.position
+        reset = (old_pos - Coords(cols, rows)).len == 0
 
-        if old_pos != (cols, rows) and self.selected_figure.move((cols, rows)):
-            prev_fig_pos = (rows, cols)
+        if not reset and self.selected_figure.move(Coords(cols, rows)):
+            prev_fig_pos = Coords(cols, rows)
             # en-passant
             if self.selected_figure.checked_en_passant:
-                prev_fig_pos = (old_pos[1], prev_fig_pos[1])
+                prev_fig_pos = Coords(cols, old_pos.row)
             # castling
             elif self.selected_figure.castles_with is not None:
                 prev_fig_pos = self.selected_figure.castles_with.position
 
-            prev_fig = self.fields[prev_fig_pos[0]][prev_fig_pos[1]]
+            prev_fig = self.fields[prev_fig_pos.row][prev_fig_pos.col]
             self.selected_figure.checked_en_passant = False
-            self.game.history.record(self.selected_figure, old_pos, (cols, rows), prev_fig)
+            self.game.history.record(self.selected_figure, old_pos, Coords(cols, rows), prev_fig)
             if prev_fig and prev_fig.checkmate():
                 self.game.running = False
-                print(f'Game over {"white" if is_white_turn else "black"} wins.')
+                self.game.history.is_final = True
+                print(f'Game over {"White" if is_white_turn else "Black"} wins.')
 
             if self.selected_figure.castles_with:
                 # perform switch during castling
-                direction = sign(self.selected_figure.position[0] - old_pos[0])
-                self.fields[old_pos[1]][cols - 2 * direction] = self.selected_figure.castles_with
-                self.selected_figure.castles_with.position = (cols - 2 * direction, old_pos[1])
+                direction = sign(self.selected_figure.position.x - old_pos.x)
+                self.fields[old_pos.y][cols - 2 * direction] = self.selected_figure.castles_with
+                self.selected_figure.castles_with.position = Coords(cols - 2 * direction, old_pos.y)
                 cols -= direction
 
-            self.fields[old_pos[1]][old_pos[0]] = None
-            self.fields[prev_fig_pos[0]][prev_fig_pos[1]] = None
-            self.selected_figure.position = (cols, rows)
+            self.fields[old_pos.row][old_pos.col] = None
+            self.fields[prev_fig_pos.row][prev_fig_pos.col] = None
+            self.selected_figure.position = Coords(cols, rows)
             self.fields[rows][cols] = self.selected_figure
 
             if hasattr(self.selected_figure, 'needs_render_selector'):
                 self.game.needs_render_selector = self.selected_figure.board.needs_render_selector
                 # always delete the temporary value. aint no snitch, but try keepin it immutable, fam
                 del self.selected_figure.board.needs_render_selector
-
         else:
-            print(f'Tried moving {self.selected_figure} -> {(cols, rows)}, not allowed.')
-            return False
+            reset = True
 
-        self.fields[self.selected_figure.position[1]][self.selected_figure.position[0]].is_selected = False
+        self.fields[self.selected_figure.position.row][self.selected_figure.position.col].is_selected = False
         if not self.game.needs_render_selector:
             self.selected_figure = None
+        if reset:
+            return False
 
         self.reset_en_passant(not is_white_turn)
         self.reset_castles(not is_white_turn)
@@ -272,11 +273,11 @@ class CheckerBoard:
         if rows > 1 or cols > 1:
             print('Error selecting...\nRetry!')
         fig_class = self.game.figure_selector.select(rows * 2 + cols)
-        figure = fig_class(self.selected_figure.position, is_white=self.selected_figure.is_white, _board=self.board)
+        figure = fig_class(self.selected_figure.position, is_white=self.selected_figure.is_white, _board=self)
 
         # figure.has_moved disables/enables Rook's castling mechanics
         figure.has_moved = not self.game.underpromoted_castling
-        self.fields[self.selected_figure.position[1]][self.selected_figure.position[0]] = figure
+        self.fields[self.selected_figure.position.row][self.selected_figure.position.col] = figure
         self.selected_figure = None
         self.game.backend.needs_render_selector = False
         self.game.is_white_turn = not self.game.is_white_turn
@@ -291,7 +292,6 @@ class CheckerBoard:
         :param is_white_turn: current players turn is white
         :return: change in turn
         """
-
         if not self.selected_figure:
             self.handle_figure_selection(cols, rows, is_white_turn)
             return False

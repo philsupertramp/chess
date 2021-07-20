@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+
+
 import argparse
 import time
 from typing import Optional
@@ -17,8 +20,16 @@ class Game:
     running = True
     is_white_turn = True
 
-    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False) -> None:
+    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False, frame_rate: float = 0.1) -> None:
+        """
+        Main Game class maintains and holds state of chess game.
+
+        :param use_pygame: indicates to use pygame backend, if false headless console backend is used
+        :param underpromoted_castling:
+        :param frame_rate: 0.05 for 120FPS, 0.1 for 60 FPS, 0.2 for 30 FPS
+        """
         self.use_pygame = use_pygame
+        self.frame_rate = frame_rate
         if self.use_pygame:
             from src.backends.pygame_backend import PygameBackend
             self.backend = PygameBackend(self)
@@ -38,9 +49,21 @@ class Game:
         """
         game loop
         """
+        start = time.time()
+        counter = 0
         while self.running:
+            if (time.time() - start) < self.frame_rate:
+                continue
             self.backend.render()
             self.backend.handle_game_events([])
+
+            counter += 1
+            if (time.time() - start) > 1:
+                print(f'FPS: {int(counter/(time.time() - start))}')
+                counter = 0
+                start = time.time()
+
+        self.history.is_final = True
 
     def handle_mouse_click(self, cols: int, rows: int) -> None:
         """
@@ -75,8 +98,8 @@ class Game:
         moves = self.history.turns
 
         for turn in moves:
-            self.handle_mouse_click(*turn.start)
-            self.handle_mouse_click(*turn.end)
+            self.handle_mouse_click(turn.start.x, turn.start.y)
+            self.handle_mouse_click(turn.end.x, turn.end.y)
             self.backend.render()
 
             self.backend.handle_game_events([], [])

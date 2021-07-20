@@ -41,14 +41,14 @@ Run the game in 2P mode
 python main.py
 ```
 
-Run the game in headless console mode
+Run the game in headless console mode (no dependencies required)
 ```shell
 python main.py --headless
 ```
 
 ## Development
 
-clone the repository and install the dependencies as described before.
+clone the repository and install the dependencies using `requirements-dev.txt`.
 
 ### Note:
 - Do not, and I repeat **not** use Pawn-d4 as a first step for testing. **This pawn is on the (4,4)-tile and will always work!**
