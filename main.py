@@ -20,7 +20,7 @@ class Game:
     running = True
     is_white_turn = True
 
-    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False, frame_rate: float = 0.1) -> None:
+    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False, frame_rate: float = 0.05) -> None:
         """
         Main Game class maintains and holds state of chess game.
 
