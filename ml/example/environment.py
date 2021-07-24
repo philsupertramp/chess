@@ -1,3 +1,5 @@
+from typing import Tuple, Union
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -80,6 +82,7 @@ class BlobEnv(QEnv):
     FOOD_REWARD = 25
     OBSERVATION_SPACE_VALUES = (SIZE, SIZE, 3)  # 4
     ACTION_SPACE_SIZE = 9
+    MAX_STATE_VAL = 255
     PLAYER_N = 1  # player key in dict
     FOOD_N = 2  # food key in dict
     ENEMY_N = 3  # enemy key in dict
@@ -105,12 +108,12 @@ class BlobEnv(QEnv):
         self.episode_step = 0
 
         if self.RETURN_IMAGES:
-            observation = np.array(self.get_image())
+            observation = np.array(self.get_current_state())
         else:
             observation = (self.player-self.food) + (self.player-self.enemy)
         return observation
 
-    def step(self, action):
+    def step(self, action) -> Tuple[Union[np.ndarray, Tuple[Union[float, int], Union[float, int]]], Union[float, int], bool]:
         self.episode_step += 1
         self.player.action(action)
 
@@ -120,7 +123,7 @@ class BlobEnv(QEnv):
         ##############
 
         if self.RETURN_IMAGES:
-            new_observation = np.array(self.get_image())
+            new_observation = np.array(self.get_current_state())
         else:
             new_observation = (self.player-self.food) + (self.player-self.enemy)
 
@@ -138,13 +141,13 @@ class BlobEnv(QEnv):
         return new_observation, reward, done
 
     def render(self):
-        img = self.get_image()
+        img = self.get_current_state()
         img = img.resize((300, 300))  # resizing so we can see our agent in all its glory.
         cv2.imshow("image", np.array(img))  # show it!
         cv2.waitKey(1)
 
     # FOR CNN #
-    def get_image(self):
+    def get_current_state(self):
         env = np.zeros((self.SIZE, self.SIZE, 3), dtype=np.uint8)  # starts an rbg of our size
         env[self.food.x][self.food.y] = self.d[self.FOOD_N]  # sets the food location tile to green color
         env[self.enemy.x][self.enemy.y] = self.d[self.ENEMY_N]  # sets the enemy location to red

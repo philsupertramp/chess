@@ -2,6 +2,10 @@ from typing import Tuple, Union
 
 import tensorflow as tf
 from keras.callbacks import TensorBoard
+from collections import deque
+import numpy as np
+import time
+import random
 
 
 # Own Tensorboard class
@@ -52,20 +56,86 @@ class BaseDQNAgent:
     def __init__(self, env):
         self.env = env
 
+        self.replay_memory = deque(maxlen=self.REPLAY_MEMORY_SIZE)
+
+        self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{self.MODEL_NAME}-{int(time.time())}")
+
+        self.target_update_counter = 0
+
+        # main model, gets trained every step
+        self.model = self.create_model()
+
+        # target model used for predictions in every step to keep predictions consistent
+        self.target_model = self.create_model()
+        self.target_model.set_weights(self.model.get_weights())
+
+    def update_replay_memory(self, transition):
+        self.replay_memory.append(transition)
+
+    def get_qs(self, state):
+        # TODO: [0] should be wrong, but could be right we only have a single output parameter :shrug:
+        return self.model.predict(self.normalize(np.array(state).reshape(-1, *state.shape)))[0]
+
+    def normalize(self, val):
+        return val / self.env.MAX_STATE_VAL
+
     def create_model(self):
         raise NotImplementedError()
 
-    def get_qs(self, state):
-        raise NotImplementedError()
-
     def train(self, terminal_state, step):
-        raise NotImplementedError()
+        if len(self.replay_memory) < self.MIN_REPLAY_MEMORY_SIZE:
+            return
+
+        mini_batch = random.sample(self.replay_memory, self.MINI_BATCH_SIZE)
+
+        # scale to \in [0, 1]
+        current_states = self.normalize(np.array([transition[0] for transition in mini_batch]))
+        current_states = current_states.reshape(*current_states.shape, -1)
+        current_qs_list = self.model.predict(current_states)
+
+        # again scaled
+        new_current_states = self.normalize(np.array([transition[3] for transition in mini_batch]))
+
+        future_qs_list = self.target_model.predict(new_current_states)
+
+        # features
+        x = list()
+        # labels
+        y = list()
+
+        for index, (current_state, action, reward, new_current_state, done) in enumerate(mini_batch):
+            # If not a terminal state, get new q from future states, otherwise set it to 0
+            # almost like with Q Learning, but we use just part of equation here
+            if not done:
+                max_future_q = np.max(future_qs_list[index])
+                new_q = reward + self.DISCOUNT * max_future_q
+            else:
+                new_q = reward
+
+            # Update Q value for given state
+            current_qs = current_qs_list[index]
+            current_qs[action] = new_q
+
+            x.append(current_state)
+            y.append(current_qs)
+
+        self.model.fit(self.normalize(np.array(x)), np.array(y), batch_size=self.MINI_BATCH_SIZE, verbose=0, shuffle=False,
+                       callbacks=[self.tensorboard] if terminal_state else None)
+
+        # updating to determine if we want to update target_model yet
+        if terminal_state:
+            self.target_update_counter += 1
+
+        if self.target_update_counter > self.UPDATE_TARGET_EVERY:
+            self.target_model.set_weights(self.model.get_weights())
+            self.target_update_counter = 0
 
 
 class QEnv:
     SIZE = 10
     OBSERVATION_SPACE_VALUES: Tuple[int, int, int] = (SIZE, SIZE, 3)  # 4
     ACTION_SPACE_SIZE: int = 9
+    MAX_STATE_VAL: Union[int, float] = 0
     episode_step: int = 0
     # define rewards/penalties as constants
 
@@ -93,5 +163,5 @@ class QEnv:
         pass
 
     # FOR CNN #
-    def get_image(self):
-        pass
+    def get_current_state(self):
+        raise NotImplementedError()

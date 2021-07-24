@@ -6,12 +6,12 @@ from src.movable import Movable
 
 class FieldType:
     EMPTY = 0
-    KING = 1
-    PAWN = 2
-    KNIGHT = 3
-    BISHOP = 4
-    ROOK = 5
-    QUEEN = 6
+    PAWN = 1
+    KNIGHT = 2
+    BISHOP = 3
+    ROOK = 4
+    QUEEN = 5
+    KING = 6
 
     WHITE = 8
     BLACK = 16

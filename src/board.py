@@ -17,6 +17,7 @@ class CheckerBoard:
         self.cell_size: Optional[Tuple[int]] = None
         # pointer to currently selected figure
         self.selected_figure = None
+        self.checked_figure = None
         # initial canvas
         self.canvas = display
         # actual game state
@@ -54,6 +55,8 @@ class CheckerBoard:
         castling: 'r3k2r/8/8/8/8/8/8/R3K2R'
         """
         self.fields = [[None for _ in range(8)] for _ in range(8)]
+        self.checked_figure = None
+        self.selected_figure = None
         self.load_game_from_string('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
 
     def reset_en_passant(self, is_white: bool) -> None:
@@ -197,6 +200,7 @@ class CheckerBoard:
         self.selected_figure = self.fields[rows][cols]
         # only allow selection if its the players turn
         if self.selected_figure:
+            self.checked_figure = None
             if self.selected_figure.is_white == is_white_turn:
                 # successfully selected figure
                 self.fields[rows][cols].is_selected = True
@@ -228,9 +232,9 @@ class CheckerBoard:
             elif self.selected_figure.castles_with is not None:
                 prev_fig_pos = self.selected_figure.castles_with.position
 
-            prev_fig = self.fields[prev_fig_pos.row][prev_fig_pos.col]
+            self.checked_figure = self.fields[prev_fig_pos.row][prev_fig_pos.col]
             self.selected_figure.checked_en_passant = False
-            if prev_fig and prev_fig.checkmate():
+            if self.checked_figure and self.checked_figure.checkmate():
                 self.game.running = False
                 self.game.history.is_final = True
                 print(f'Game over {"White" if is_white_turn else "Black"} wins.')
@@ -248,7 +252,7 @@ class CheckerBoard:
             self.fields[rows][cols] = self.selected_figure
 
             if not self.game.backend.needs_render_selector:
-                self.game.history.record(self.selected_figure, old_pos, Coords(cols, rows), prev_fig)
+                self.game.history.record(self.selected_figure, old_pos, Coords(cols, rows), self.checked_figure)
         else:
             reset = True
 

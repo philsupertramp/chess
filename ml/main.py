@@ -13,16 +13,12 @@ import time
 import os
 import random
 
-from example.agent import DQNAgent
-from example.environment import BlobEnv
+from agent import ChessAgent
+from environment import ChessEnvironment
 
-REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 1_000
+
 MODEL_NAME = "256x2"
-MINIBATCH_SIZE = 64
-DISCOUNT = 0.99
 MIN_REWARD = -200
-UPDATE_TARGET_EVERY = 5
 
 MEMORY_FRACTION = 0.20
 
@@ -35,11 +31,11 @@ MIN_EPSILON = 0.001
 
 #  Stats settings
 AGGREGATE_STATS_EVERY = 50  # episodes
-SHOW_PREVIEW = False
+SHOW_PREVIEW = True
 
 
 def main():
-    env = BlobEnv()
+    env = ChessEnvironment()
 
     # For stats
     ep_rewards = [-200]
@@ -57,7 +53,7 @@ def main():
     if not os.path.isdir('models'):
         os.makedirs('models')
 
-    agent = DQNAgent(env)
+    agent = ChessAgent(env)
     epsilon = 1  # not a constant, going to be decayed
 
     # Iterate over episodes
@@ -87,10 +83,10 @@ def main():
 
             new_state, reward, done = env.step(action)
 
-            # Transform new continous state to new discrete state and count reward
+            # Transform new continuous state to new discrete state and count reward
             episode_reward += reward
 
-            if SHOW_PREVIEW and not episode % AGGREGATE_STATS_EVERY:
+            if SHOW_PREVIEW:# and not episode % AGGREGATE_STATS_EVERY:
                 env.render()
 
             # Every step we update replay memory and train main network
