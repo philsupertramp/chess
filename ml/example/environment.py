@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from base import QEnv
+
 
 class Blob:
     def __init__(self, size):
@@ -70,7 +72,7 @@ class Blob:
             self.y = self.size-1
 
 
-class BlobEnv:
+class BlobEnv(QEnv):
     SIZE = 10
     RETURN_IMAGES = True
     MOVE_PENALTY = 1
