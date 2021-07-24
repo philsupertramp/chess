@@ -38,7 +38,6 @@ class Game:
             self.backend = HeadlessBackend(self)
 
         self.board = CheckerBoard(self.backend.canvas, self)
-        self.needs_render_selector = False
         self.underpromoted_castling = underpromoted_castling
 
     @property
@@ -90,7 +89,7 @@ class Game:
         self.running = True
         self.is_white_turn = True
 
-    def replay(self, step_length: float = 1.5) -> None:
+    def replay(self, step_length: float = 1.) -> None:
         """
         Replays
         :param step_length: time between steps to display
@@ -98,14 +97,24 @@ class Game:
         moves = self.history.turns
 
         for turn in moves:
-            self.handle_mouse_click(turn.start.x, turn.start.y)
-            self.handle_mouse_click(turn.end.x, turn.end.y)
+            if turn.is_promotion:
+                self.handle_mouse_click(turn.start.x, turn.start.y)
+                self.handle_mouse_click(turn.end.x, turn.end.y)
+                self.backend.needs_render_selector = False
+                self.board.fields[turn.start.y][turn.start.y] = None
+                self.board.fields[turn.end.y][turn.end.y] = turn.figure
+                self.board.fields[turn.end.y][turn.end.y].has_moved = True
+                self.board.fields[turn.end.y][turn.end.y].prev_position = turn.start
+                self.board.selected_figure = None
+            else:
+                self.handle_mouse_click(turn.start.x, turn.start.y)
+                self.handle_mouse_click(turn.end.x, turn.end.y)
             self.backend.render()
 
             self.backend.handle_game_events([], [])
 
             # TODO: add some interruptable timeout
-            time.sleep(1)
+            time.sleep(step_length)
 
     def close(self):
         self.backend.shutdown()

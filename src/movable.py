@@ -87,6 +87,7 @@ class BoardState:
 class Movable(DirectionMixin, BoardState):
     def __init__(self, pos: Coords, board: 'CheckerBoard'):
         self.position = pos
+        self.prev_position = None
         self.has_moved = False
         self.can_jump = False
         super().__init__(board)
@@ -95,11 +96,14 @@ class Movable(DirectionMixin, BoardState):
         """
         Moves a figure to a new given position, checks and return success
 
+        Also sets positions and markers if movable has moved.
+
         :param new_pos: position to move the figure to, potentially
         :return: successfully moved figure
         """
         if self.is_move_allowed(new_pos):  # not self.locked() and self.is_move_allowed(new_pos):
             self.move_in_state(new_pos)
+            self.prev_position = self.position
             self.position = new_pos
             self.has_moved = True
             return True

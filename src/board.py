@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.figures import Figure, King, Queen, Knight, Pawn, Bishop, Rook, FieldType
+from src.figures import Figure, King, Queen, Knight, Pawn, Bishop, Rook
 from src.helpers import sign, Coords
 from src.history import TurnHistory
 
@@ -230,7 +230,6 @@ class CheckerBoard:
 
             prev_fig = self.fields[prev_fig_pos.row][prev_fig_pos.col]
             self.selected_figure.checked_en_passant = False
-            self.game.history.record(self.selected_figure, old_pos, Coords(cols, rows), prev_fig)
             if prev_fig and prev_fig.checkmate():
                 self.game.running = False
                 self.game.history.is_final = True
@@ -247,6 +246,9 @@ class CheckerBoard:
             self.fields[prev_fig_pos.row][prev_fig_pos.col] = None
             self.selected_figure.position = Coords(cols, rows)
             self.fields[rows][cols] = self.selected_figure
+
+            if not self.game.backend.needs_render_selector:
+                self.game.history.record(self.selected_figure, old_pos, Coords(cols, rows), prev_fig)
         else:
             reset = True
 
@@ -273,8 +275,11 @@ class CheckerBoard:
         figure = fig_class(self.selected_figure.position, is_white=self.selected_figure.is_white, _board=self)
 
         # figure.has_moved disables/enables Rook's castling mechanics
+        # in case selected figure is queen.
         figure.has_moved = not self.game.underpromoted_castling
+        figure.prev_position = self.selected_figure.prev_position
         self.fields[self.selected_figure.position.row][self.selected_figure.position.col] = figure
+        self.game.history.record(figure, figure.prev_position, figure.position, None, is_promotion=True)
         self.selected_figure = None
         self.game.backend.needs_render_selector = False
         self.game.is_white_turn = not self.game.is_white_turn
