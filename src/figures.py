@@ -23,44 +23,6 @@ class FieldType:
         return val - cls.WHITE
 
 
-# global state for figure textures
-figures = dict()
-
-
-def rescale_images(canvas: 'pygame.Surface') -> None:
-    """
-    Helper method to rescale all figure-textures based on a given canvas.
-    Each figure will be scaled 1/8th of the canvas input
-
-    :param canvas: canvas to scale based on
-    """
-    import pygame
-    global figures
-
-    figures = {
-        FieldType.QUEEN | FieldType.BLACK: pygame.image.load('resources/queen.png').convert_alpha(),
-        FieldType.KING | FieldType.BLACK: pygame.image.load('resources/king.png').convert_alpha(),
-        FieldType.ROOK | FieldType.BLACK: pygame.image.load('resources/rook.png').convert_alpha(),
-        FieldType.KNIGHT | FieldType.BLACK: pygame.image.load('resources/knight.png').convert_alpha(),
-        FieldType.BISHOP | FieldType.BLACK: pygame.image.load('resources/bishop.png').convert_alpha(),
-        FieldType.PAWN | FieldType.BLACK: pygame.image.load('resources/pawn.png').convert_alpha(),
-
-        FieldType.QUEEN | FieldType.WHITE: pygame.image.load('resources/queen_w.png').convert_alpha(),
-        FieldType.KING | FieldType.WHITE: pygame.image.load('resources/king_w.png').convert_alpha(),
-        FieldType.ROOK | FieldType.WHITE: pygame.image.load('resources/rook_w.png').convert_alpha(),
-        FieldType.KNIGHT | FieldType.WHITE: pygame.image.load('resources/knight_w.png').convert_alpha(),
-        FieldType.BISHOP | FieldType.WHITE: pygame.image.load('resources/bishop_w.png').convert_alpha(),
-        FieldType.PAWN | FieldType.WHITE: pygame.image.load('resources/pawn_w.png').convert_alpha(),
-    }
-
-    ratio = (int(canvas.get_width() / 8), int(canvas.get_height() / 8))
-
-    def scale_figure(figure):
-        return pygame.transform.scale(figure, ratio)
-
-    figures = {key: scale_figure(figure) for key, figure in figures.items()}
-
-
 class Figure(Movable):
     def __init__(self, pos: Coords, is_white: bool, _board: 'CheckerBoard'):
         self.type: int = FieldType.WHITE if is_white else FieldType.BLACK
@@ -76,26 +38,6 @@ class Figure(Movable):
         Method to signalize checkmate, this is actually only implemented in King
         """
         return False
-
-    def draw(self, canvas: 'pygame.Surface') -> None:
-        """
-        Renders figure (incl. allowed moves) onto given canvas
-
-        :param canvas: canvas to draw to
-        """
-        if self.type == FieldType.EMPTY:
-            return
-
-        if self.is_selected:
-            self.draw_allowed_moves(canvas)
-
-        scale = canvas.get_width() / 8, canvas.get_height() / 8
-        figure = figures.get(self.type).copy()
-        if self.is_selected:
-            figure.convert_alpha()
-            figure.set_colorkey((255, 0, 255))
-
-        canvas.blit(figure, (scale[0] * self.position.x, scale[1] * self.position.y))
 
     def draw_allowed_moves(self, canvas: 'pygame.Surface') -> None:
         """
@@ -210,9 +152,9 @@ class Pawn(Figure):
         if allowed:
             self.en_passant = abs(new_pos.y - pos.y) == 2
 
-        if (self.is_white and new_pos.y == 0) or (not self.is_white and new_pos.y == 7):
+        if allowed and ((self.is_white and new_pos.y == 0) or (not self.is_white and new_pos.y == 7)):
             # we're on the other side
-            self.board.needs_render_selector = True
+            self.board.game.backend.needs_render_selector = True
         return allowed
 
 

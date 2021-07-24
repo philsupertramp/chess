@@ -1,12 +1,15 @@
-#!/env/bin/python
+#!/usr/bin/env python
+
+
+import numpy as np
+
+import plaidml.keras
+plaidml.keras.install_backend()
+
 import tensorflow as tf
 from tqdm import tqdm
 import time
 import os
-from PIL import Image
-import cv2
-import numpy as np
-from collections import deque
 import random
 
 from example.agent import DQNAgent
@@ -65,6 +68,7 @@ def main():
         # Restarting episode - reset episode reward and step number
         episode_reward = 0
         step = 1
+        agent.tensorboard._train_step = episode
 
         # Reset environment and get initial state
         current_state = env.reset()

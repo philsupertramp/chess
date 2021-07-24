@@ -1,10 +1,15 @@
 import pygame
 
+from src.figures import FieldType
+
 
 class Screen:
     def __init__(self, surf: pygame.Surface):
         self.window = surf
         self.font = pygame.font.SysFont('DejaVu Sans Mono', size=16, bold=True)
+        self.figure_size = 0
+        self.figure_font = None
+        self.resize_figure_font(0.5 * surf.get_width() / 8)
 
     @classmethod
     def build(cls, width, height):
@@ -13,6 +18,33 @@ class Screen:
 
     def draw_text(self, text, position):
         self.draw_text_to_surface(text, position, self.window)
+
+    def resize_figure_font(self, size):
+        if self.figure_size != int(size):
+            self.figure_size = int(size)
+            self.figure_font = pygame.font.Font('/home/phil/work/private/chess/resources/merida.ttf', self.figure_size)
+
+    def draw_figure(self, fig_type, position, surface=None):
+        if surface is None:
+            surface = self.window
+
+        text = {
+            FieldType.WHITE | FieldType.PAWN: 'p',
+            FieldType.BLACK | FieldType.PAWN: 'o',
+            FieldType.WHITE | FieldType.KNIGHT: 'n',
+            FieldType.BLACK | FieldType.KNIGHT: 'm',
+            FieldType.WHITE | FieldType.BISHOP: 'b',
+            FieldType.BLACK | FieldType.BISHOP: 'v',
+            FieldType.WHITE | FieldType.ROOK: 'r',
+            FieldType.BLACK | FieldType.ROOK: 't',
+            FieldType.WHITE | FieldType.QUEEN: 'q',
+            FieldType.BLACK | FieldType.QUEEN: 'w',
+            FieldType.WHITE | FieldType.KING: 'k',
+            FieldType.BLACK | FieldType.KING: 'l',
+        }[fig_type]
+
+        text_surface = self.figure_font.render(text, False, (0, 0, 0))
+        surface.blit(text_surface, position)
 
     def draw_text_to_surface(self, text, position, surface):
         text_surface = self.font.render(text, True, (0, 0, 0))

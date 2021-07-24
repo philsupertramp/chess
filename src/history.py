@@ -17,6 +17,8 @@ class Turn:
 
 
 class TurnHistory:
+    # TODO: Add pawn promotion to notation
+
     data: str = ''
     last_move: Optional[str] = ''
     turn: int = 0

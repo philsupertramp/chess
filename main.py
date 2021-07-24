@@ -76,7 +76,7 @@ class Game:
         if rows < 0 or rows > 7 or cols < 0 or cols > 7:
             return
 
-        if self.board.handle_mouse_click(cols, rows, self.is_white_turn) and not self.needs_render_selector:
+        if self.board.handle_mouse_click(cols, rows, self.is_white_turn) and not self.backend.needs_render_selector:
             # switch turn
             self.is_white_turn = not self.is_white_turn
 

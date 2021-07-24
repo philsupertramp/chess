@@ -7,7 +7,6 @@ import pygame
 
 from src.backends.base import BaseBackend
 from src.backends.selector import FigureSelector
-from src.figures import rescale_images
 
 
 EventCallback = Callable[[Event], None]
@@ -17,10 +16,7 @@ class PygameBackend(BaseBackend):
     def __init__(self, game):
         super().__init__(game)
         self.canvas = pygame.Surface((screen.get_size()[0], screen.get_size()[1] - 20))
-        rescale_images(screen)
         self.figure_selector = FigureSelector()
-        self.needs_render_selector = False
-        self.is_mouse_clicked = False
 
     def handle_game_events(self, procedures: Optional[List[EventCallback]] = None, events=None) -> None:
         def quit_event(event):
@@ -60,7 +56,6 @@ class PygameBackend(BaseBackend):
 
     def rescale(self):
         self.canvas = pygame.Surface((screen.get_width(), screen.get_height() - 20))
-        rescale_images(self.canvas)
         self.figure_selector = FigureSelector()
 
     def reset(self):
@@ -75,6 +70,7 @@ class PygameBackend(BaseBackend):
         """
         self.rescale()
         self.game.board.rescale(self.canvas)
+        screen.resize_figure_font(0.5 * screen.get_width() / 8)
 
     def handle_click(self) -> None:
         """
@@ -91,7 +87,7 @@ class PygameBackend(BaseBackend):
         rows = int(mouse_pos[1] / scale[1])
 
         if self.needs_render_selector:
-            self.game.handle_figure_promotion(cols, rows)
+            self.game.board.handle_figure_promotion(cols, rows)
         else:
             self.game.handle_mouse_click(cols, rows)
 

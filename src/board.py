@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.figures import Figure, King, Queen, Knight, Pawn, Bishop, Rook
+from src.figures import Figure, King, Queen, Knight, Pawn, Bishop, Rook, FieldType
 from src.helpers import sign, Coords
 from src.history import TurnHistory
 
@@ -173,13 +173,15 @@ class CheckerBoard:
         from src.backends.screen import screen
         self.canvas.blit(self.empty_board, self.empty_board.get_rect())
 
-        for x in range(len(self.fields)):
-            for y in range(len(self.fields[x])):
-                if not self.fields[x][y]:
+        # screen.draw_figure(FieldType.ROOK | FieldType.WHITE, (100, 100))
+        for y in range(len(self.fields)):
+            for x in range(len(self.fields[y])):
+                if not self.fields[y][x]:
                     continue
 
-                self.fields[x][y].draw(self.canvas)
-
+                screen.draw_figure(self.fields[y][x].type, ((.25+x) * self.cell_size[0], y * self.cell_size[1]), surface=self.canvas)
+                if self.fields[y][x].is_selected:
+                    self.fields[y][x].draw_allowed_moves(self.canvas)
         screen.blit(self.canvas, self.canvas.get_rect())
 
     def handle_figure_selection(self, cols: int, rows: int, is_white_turn: bool) -> None:
@@ -245,16 +247,11 @@ class CheckerBoard:
             self.fields[prev_fig_pos.row][prev_fig_pos.col] = None
             self.selected_figure.position = Coords(cols, rows)
             self.fields[rows][cols] = self.selected_figure
-
-            if hasattr(self.selected_figure, 'needs_render_selector'):
-                self.game.needs_render_selector = self.selected_figure.board.needs_render_selector
-                # always delete the temporary value. aint no snitch, but try keepin it immutable, fam
-                del self.selected_figure.board.needs_render_selector
         else:
             reset = True
 
         self.fields[self.selected_figure.position.row][self.selected_figure.position.col].is_selected = False
-        if not self.game.needs_render_selector:
+        if not self.game.backend.needs_render_selector:
             self.selected_figure = None
         if reset:
             return False

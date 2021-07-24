@@ -2,13 +2,13 @@ from unittest import mock
 
 
 class BaseBackend:
-    canvas = None
-    figure_selector = None
-    needs_render_selector = False
-    is_mouse_clicked = False
 
     def __init__(self, game):
         self.game = game
+        self.canvas = None
+        self.figure_selector = None
+        self.needs_render_selector = False
+        self.is_mouse_clicked = False
 
     def handle_game_events(self, procedures, events):
         for event in events:

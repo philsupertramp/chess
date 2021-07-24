@@ -1,10 +1,12 @@
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatten
-from keras.optimizers import Adam
+# from keras.optimizers import Adam
 import random
 import time
 import numpy as np
 from collections import deque
+
+from keras.optimizer_v1 import Adam
 
 from base import BaseDQNAgent, ModifiedTensorBoard
 
