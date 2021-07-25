@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import tensorflow as tf
 from keras.callbacks import TensorBoard
@@ -89,14 +89,10 @@ class BaseDQNAgent:
         mini_batch = random.sample(self.replay_memory, self.MINI_BATCH_SIZE)
 
         # scale to \in [0, 1]
-        current_states = self.normalize(np.array([transition[0] for transition in mini_batch]))
-        current_states = current_states.reshape(*current_states.shape, -1)
-        current_qs_list = self.model.predict(current_states)
+        current_qs_list = np.array([self.get_qs(transition[0]) for transition in mini_batch])
 
         # again scaled
-        new_current_states = self.normalize(np.array([transition[3] for transition in mini_batch]))
-
-        future_qs_list = self.target_model.predict(new_current_states)
+        future_qs_list = np.array([self.get_qs(transition[3]) for transition in mini_batch])
 
         # features
         x = list()
@@ -105,7 +101,7 @@ class BaseDQNAgent:
 
         for index, (current_state, action, reward, new_current_state, done) in enumerate(mini_batch):
             # If not a terminal state, get new q from future states, otherwise set it to 0
-            # almost like with Q Learning, but we use just part of equation here
+            # almost like with Q Learning, but we use just part of the equation here
             if not done:
                 max_future_q = np.max(future_qs_list[index])
                 new_q = reward + self.DISCOUNT * max_future_q
@@ -130,6 +126,8 @@ class BaseDQNAgent:
             self.target_model.set_weights(self.model.get_weights())
             self.target_update_counter = 0
 
+        self.replay_memory.clear()
+
 
 class QEnv:
     SIZE = 10
@@ -146,7 +144,7 @@ class QEnv:
         """
         raise NotImplementedError()
 
-    def step(self, action: int) -> Tuple[Tuple[Union[float, int], Union[float, int]], Union[float, int], bool]:
+    def step(self, action: int) -> Tuple[Tuple[Union[float, int], Union[float, int]], Union[float, int], bool, Optional[Tuple]]:
         """
         Computes a step in the environment  using given action
 

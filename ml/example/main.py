@@ -7,14 +7,13 @@ import numpy as np
 # plaidml.keras.install_backend()
 
 import tensorflow as tf
-from tensorflow.keras import backend
 from tqdm import tqdm
 import time
 import os
 import random
 
-from example.agent import DQNAgent
-from example.environment import BlobEnv
+from agent import DQNAgent
+from environment import BlobEnv
 
 REPLAY_MEMORY_SIZE = 50_000
 MIN_REPLAY_MEMORY_SIZE = 1_000

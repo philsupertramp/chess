@@ -4,14 +4,13 @@ import tensorflow as tf
 
 
 class ChessAgent(BaseDQNAgent):
-    MODEL_NAME = "Chess-"
-
-    def __init__(self, env):
-        super().__init__(env)
+    MODEL_NAME = "Chess"
+    UPDATE_TARGET_EVERY = 20
+    MIN_REPLAY_MEMORY_SIZE = 10_000
 
     def create_model(self):
         model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Flatten(input_shape=self.env.OBSERVATION_SPACE_VALUES))
+        model.add(tf.keras.layers.Dense(64, activation='relu', input_shape=(1, *self.env.OBSERVATION_SPACE_VALUES)))
         model.add(tf.keras.layers.Dense(64, activation='relu'))
         model.add(tf.keras.layers.Dense(64, activation='relu'))
         model.add(tf.keras.layers.Dense(self.env.ACTION_SPACE_SIZE, activation='linear'))

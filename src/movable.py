@@ -40,6 +40,17 @@ class DirectionMixin:
         return list(set(filter(lambda val: val.x >= 0 and val.y >= 0 and abs(val.x) < 8 and abs(val.y) < 8, res)))
 
     @classmethod
+    def get_night_moves(cls, pos: Coords) -> List[Coords]:
+        x = pos.x
+        y = pos.y
+        return [
+            Coords(x - 1, y - 2), Coords(x - 2, y - 1),
+            Coords(x + 1, y - 2), Coords(x + 2, y - 1),
+            Coords(x - 1, y + 2), Coords(x - 2, y + 1),
+            Coords(x + 1, y + 2), Coords(x + 2, y + 1),
+        ]
+
+    @classmethod
     def get_lines(cls, pos: Coords, length: int) -> List[Coords]:
         """
         Helper to create straight line moves

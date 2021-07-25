@@ -8,12 +8,15 @@ from src.helpers import Coords
 
 
 class TurnAction:
-    def __init__(self, figure: Figure, allowed_moves: List[Coords]):
+    def __init__(self, x, y, figure: Figure = None, allowed_moves: Union[List[Coords]] = None, move_index: int = -1):
+        self.x = x
+        self.y = y
         self.figure = figure
         self.allowed_moves = allowed_moves
+        self.move_index = move_index
 
     def __str__(self):
-        return f'{self.figure} –> {self.move}'
+        return f'{self.figure} –> {self.allowed_moves}'
 
 
 class ChessEnvironment(QEnv):
@@ -22,7 +25,7 @@ class ChessEnvironment(QEnv):
     MOVE_PENALTY = 1
     ENEMY_PENALTY = 300
     LOSS_PENALTY = 500
-    NOT_PLAYING_PENALTY = 100
+    NOT_PLAYING_PENALTY = 5
     CHECK_PENALTIES = {
         FieldType.PAWN: 10,
         FieldType.KNIGHT: 20,
@@ -31,14 +34,14 @@ class ChessEnvironment(QEnv):
         FieldType.QUEEN: 50,
         FieldType.KING: LOSS_PENALTY,
     }
-    ACTION_SPACE_SIZE = 8*2
-    OBSERVATION_SPACE_VALUES = (SIZE*SIZE, ACTION_SPACE_SIZE, 1)
+    ACTION_SPACE_SIZE = 4
+    OBSERVATION_SPACE_VALUES = (SIZE, SIZE)
     MAX_STATE_VAL = FieldType.KING | FieldType.BLACK
     episode_step: int = 0
 
     def __init__(self):
         self.game = Game()
-        self.action_storage: List[TurnAction] = list()
+        self.state_storage = None
         self.is_white = True
         self.current_start_reward = 0
         super().__init__()
@@ -51,10 +54,9 @@ class ChessEnvironment(QEnv):
         self.game.reset()
         self.episode_step = 0
 
-        self.action_storage = list()
         return np.array(self.get_current_state())
 
-    def step(self, action: int) -> Tuple[Union[np.ndarray, Tuple[Union[float, int], Union[float, int]]], Union[float, int], bool]:
+    def step(self, action: Tuple[int, int]):# -> Tuple[Union[np.ndarray, Tuple[Union[float, int], Union[float, int]]], Union[float, int], bool]:
         """
         Computes a step in the environment  using given action
 
@@ -64,14 +66,17 @@ class ChessEnvironment(QEnv):
 
         reward = self.current_start_reward
         turn = None
-        try:
-            turn = self.action_storage[action][0][0]
-        except IndexError:
-            reward -= self.NOT_PLAYING_PENALTY
+        self.game.handle_mouse_click(action[0], action[1])
+        if self.game.board.selected_figure:
+            try:
+                turn = action[2], action[3]
+            except IndexError:
+                reward -= self.NOT_PLAYING_PENALTY
 
-        if turn and turn.allowed_moves:
-            self.game.handle_mouse_click(turn.figure.position.y, turn.figure.position.x)
-            self.game.handle_mouse_click(turn.allowed_moves[0].y, turn.allowed_moves[0].x)
+            if turn is not None:
+                self.game.handle_mouse_click(*turn)
+            else:
+                reward -= self.NOT_PLAYING_PENALTY
         else:
             reward -= self.NOT_PLAYING_PENALTY
 
@@ -92,15 +97,20 @@ class ChessEnvironment(QEnv):
         :return:
         """
         self.game.backend.render()
+        self.game.backend.handle_game_events([])
 
     # FOR CNN #
     def get_current_state(self):
-        self.action_storage = np.empty(shape=self.OBSERVATION_SPACE_VALUES, dtype=TurnAction)
-        cell_index = 0
-        for y in self.game.board.fields:
-            for cell in y:
+        self.state_storage = np.empty(shape=self.OBSERVATION_SPACE_VALUES, dtype=float)
+        y = 0
+        for row in self.game.board.fields:
+            x = 0
+            for cell in row:
                 if cell is not None and cell.is_white == self.is_white:
-                    self.action_storage[cell_index] = TurnAction(cell, cell.allowed_moves)
-                    cell_index += 1
+                    self.state_storage[y][x] = cell.type
+                else:
+                    self.state_storage[y][x] = 0
+                x += 1
+            y += 1
 
-        return np.array(np.arange(0, self.ACTION_SPACE_SIZE))
+        return self.state_storage

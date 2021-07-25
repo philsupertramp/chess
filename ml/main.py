@@ -7,7 +7,6 @@ import numpy as np
 # plaidml.keras.install_backend()
 
 import tensorflow as tf
-from tensorflow.keras import backend
 from tqdm import tqdm
 import time
 import os
@@ -54,7 +53,7 @@ def main():
         os.makedirs('models')
 
     agent = ChessAgent(env)
-    epsilon = 1  # not a constant, going to be decayed
+    epsilon = .75  # not a constant, going to be decayed
 
     # Iterate over episodes
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
@@ -72,22 +71,24 @@ def main():
         # Reset flag and start iterating until episode ends
         done = False
         while not done:
+            agent.tensorboard._test_step = step
 
             # This part stays mostly the same, the change is to query a model for Q values
             if np.random.random() > epsilon:
                 # Get action from Q table
-                action = np.argmax(agent.get_qs(np.array(current_state)))
+                qs = agent.get_qs(np.array(current_state))
+                action = np.unravel_index(np.argmax(qs, axis=None), qs.shape)
             else:
                 # Get random action
-                action = np.random.randint(0, env.ACTION_SPACE_SIZE)
+                action = np.random.randint(0, 7, size=4)
 
             new_state, reward, done = env.step(action)
 
             # Transform new continuous state to new discrete state and count reward
             episode_reward += reward
 
-            if SHOW_PREVIEW:# and not episode % AGGREGATE_STATS_EVERY:
-                env.render()
+            # if SHOW_PREVIEW:# and not episode % AGGREGATE_STATS_EVERY:
+            env.render()
 
             # Every step we update replay memory and train main network
             agent.update_replay_memory((current_state, action, reward, new_state, done))
@@ -95,6 +96,9 @@ def main():
 
             current_state = new_state
             step += 1
+            while not env.game.is_white_turn and env.game.running:
+                env.render()
+                done = not env.game.running
 
         # Append episode reward to a list and log stats (every given number of episodes)
         ep_rewards.append(episode_reward)

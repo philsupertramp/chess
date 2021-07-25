@@ -206,7 +206,7 @@ class CheckerBoard:
                 self.fields[rows][cols].is_selected = True
             else:
                 # unselect figure and print a picking error
-                color = "White" if is_white_turn else "Black"
+                # color = "White" if is_white_turn else "Black"
                 # reset picked figure
                 self.selected_figure = None
 

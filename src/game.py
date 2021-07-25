@@ -5,12 +5,9 @@ from src.board import CheckerBoard
 
 from src.history import TurnHistory
 
-from src.figures import Figure
-
 
 class Game:
     history = TurnHistory()
-    selected_figure: Optional[Figure] = None
 
     is_mouse_clicked = False
     running = True

@@ -6,6 +6,19 @@ from src.figures import Pawn, King, Rook, FieldType
 from src.helpers import Coords
 
 
+class FieldTypeTestCase(TestCase):
+    def test_conversation(self):
+        black_king = FieldType.KING | FieldType.BLACK
+
+        self.assertEqual(FieldType.clear(black_king), FieldType.KING)
+
+        self.assertEqual(black_king & FieldType.KING, FieldType.KING)
+        self.assertEqual(black_king & FieldType.BLACK, FieldType.BLACK)
+
+        self.assertEqual(black_king - FieldType.KING, FieldType.BLACK)
+        self.assertEqual(black_king - FieldType.BLACK, FieldType.KING)
+
+
 class FigureTestCase(TestCase):
     def setUp(self) -> None:
         self.board = mock.Mock(fields=[[None for _ in range(8)] for _ in range(8)])

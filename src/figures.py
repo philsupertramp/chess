@@ -110,7 +110,7 @@ class Pawn(Figure):
 
     def is_move_allowed(self, move: Coords) -> bool:
         return (
-            (sign(move.y - self.position.y) == (-1 if self.is_white else 1))
+            (sign(move.y - self.position.y) == self.direction)
             and (self.is_valid_move(move) or self.is_valid_check(move))
         )
 
@@ -119,7 +119,7 @@ class Pawn(Figure):
         Test for diagonal, or en-passant check
         """
         # is unblocked move in column
-        if ((en_passant_fig := self.check_field(Coords(move.x, move.y - self.direction)))
+        if abs(move.y - self.position.y) == 1 and ((en_passant_fig := self.check_field(Coords(move.x, move.y - self.direction)))
                 and en_passant_fig.is_white != self.is_white and en_passant_fig.en_passant):
             self.checked_en_passant = True
             return True
@@ -250,14 +250,7 @@ class Knight(Figure):
 
     @property
     def allowed_moves(self) -> List[Coords]:
-        x = self.position.x
-        y = self.position.y
-        return self.clean_target_fields([
-            Coords(x - 1, y - 2), Coords(x - 2, y - 1),
-            Coords(x + 1, y - 2), Coords(x + 2, y - 1),
-            Coords(x - 1, y + 2), Coords(x - 2, y + 1),
-            Coords(x + 1, y + 2), Coords(x + 2, y + 1)
-        ])
+        return self.clean_target_fields(self.get_night_moves(self.position))
 
     def __str__(self) -> str:
         return f'{"white " if self.is_white else "black "}Knight: {self.position}'
