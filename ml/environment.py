@@ -5,12 +5,11 @@ from src.game import Game
 
 from src.figures import FieldType, Figure
 from src.helpers import Coords
+from src.history import TurnHistory
 
 
 class TurnAction:
-    def __init__(self, x, y, figure: Figure = None, allowed_moves: Union[List[Coords]] = None, move_index: int = -1):
-        self.x = x
-        self.y = y
+    def __init__(self, figure: Figure = None, allowed_moves: Union[List[Coords]] = None, move_index: int = -1):
         self.figure = figure
         self.allowed_moves = allowed_moves
         self.move_index = move_index
@@ -24,14 +23,14 @@ class ChessEnvironment(QEnv):
     RETURN_IMAGES = False
     MOVE_PENALTY = 1
     ENEMY_PENALTY = 300
-    LOSS_PENALTY = 500
-    NOT_PLAYING_PENALTY = 5
+    LOSS_PENALTY = 1000
+    NOT_PLAYING_PENALTY = 60
     CHECK_PENALTIES = {
-        FieldType.PAWN: 10,
-        FieldType.KNIGHT: 20,
-        FieldType.BISHOP: 30,
-        FieldType.ROOK: 40,
-        FieldType.QUEEN: 50,
+        FieldType.PAWN: 100,
+        FieldType.KNIGHT: 200,
+        FieldType.BISHOP: 300,
+        FieldType.ROOK: 400,
+        FieldType.QUEEN: 500,
         FieldType.KING: LOSS_PENALTY,
     }
     ACTION_SPACE_SIZE = 4
@@ -51,7 +50,8 @@ class ChessEnvironment(QEnv):
         Resets the env state to initial (random) values.
         :return:
         """
-        self.game.reset()
+        self.game = Game()
+        self.game.history = TurnHistory()
         self.episode_step = 0
 
         return np.array(self.get_current_state())
@@ -87,9 +87,6 @@ class ChessEnvironment(QEnv):
             reward += self.CHECK_PENALTIES[enemy_type]
 
         return self.get_current_state(), reward, done
-
-    def check_enemy_piece(self, enemy_type):
-        self.current_start_reward = -self.CHECK_PENALTIES[enemy_type]
 
     def render(self):
         """

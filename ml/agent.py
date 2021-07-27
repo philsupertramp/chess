@@ -6,7 +6,7 @@ import tensorflow as tf
 class ChessAgent(BaseDQNAgent):
     MODEL_NAME = "Chess"
     UPDATE_TARGET_EVERY = 20
-    MIN_REPLAY_MEMORY_SIZE = 10_000
+    MIN_REPLAY_MEMORY_SIZE = 1_000
 
     def create_model(self):
         model = tf.keras.models.Sequential()

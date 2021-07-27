@@ -14,10 +14,11 @@ import random
 
 from agent import ChessAgent
 from environment import ChessEnvironment
-
+from ml.environment import TurnAction
+from src.figures import FieldType
 
 MODEL_NAME = "256x2"
-MIN_REWARD = -200
+MIN_REWARD = -50_000
 
 MEMORY_FRACTION = 0.20
 
@@ -31,6 +32,42 @@ MIN_EPSILON = 0.001
 #  Stats settings
 AGGREGATE_STATS_EVERY = 50  # episodes
 SHOW_PREVIEW = True
+
+
+"""
+Penalty system:
+- starting penalty: -200
+- MOVE_PENALTY = 1
+- ENEMY_PENALTY = -300
+- LOSS_PENALTY = -1000
+- NOT_PLAYING_PENALTY = -60
+- CHECK_PENALTIES = {
+        FieldType.PAWN: -100,
+        FieldType.KNIGHT: -200,
+        FieldType.BISHOP: -300,
+        FieldType.ROOK: -400,
+        FieldType.QUEEN: -500,
+        FieldType.KING: LOSS_PENALTY,
+    }
+Rewards:
+- winning: +1000
+- checking:
+    - FieldType.PAWN: 100,
+    - FieldType.KNIGHT: 200,
+    - FieldType.BISHOP: 300,
+    - FieldType.ROOK: 400,
+    - FieldType.QUEEN: 500,
+    - FieldType.KING: 1000
+
+
+To simulate training of allowed moves introduce penalties for arguments:
+- first: empty > other color > own color (ranking per type) 
+- second: not allowed move > walking > check figure (ranking per type) 
+
+maybe introduce pending penalty, for advanced game to give penalties
+whenever only pawns are played
+
+"""
 
 
 def main():
@@ -53,7 +90,7 @@ def main():
         os.makedirs('models')
 
     agent = ChessAgent(env)
-    epsilon = .75  # not a constant, going to be decayed
+    epsilon = 1  # not a constant, going to be decayed
 
     # Iterate over episodes
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
@@ -84,11 +121,39 @@ def main():
 
             new_state, reward, done = env.step(action)
 
+            if env.game.backend.needs_render_selector:
+                env.game.board.handle_figure_promotion(0, 0)
+
             # Transform new continuous state to new discrete state and count reward
             episode_reward += reward
 
+            if episode_reward < 1_000 * -env.LOSS_PENALTY:
+                episode_reward -= reward
+                break
+
             # if SHOW_PREVIEW:# and not episode % AGGREGATE_STATS_EVERY:
             env.render()
+
+            while not env.game.is_white_turn and env.game.running:
+                moves = []
+                for row in env.game.board.fields:
+                    for cell in row:
+                        if cell and not cell.is_white:
+                            allowed_moves = cell.remove_set(cell.allowed_moves)
+                            if allowed_moves:
+                                moves.append(TurnAction(figure=cell, allowed_moves=allowed_moves))
+                fig = moves[random.randint(0, len(moves)-1)]
+                move = fig.allowed_moves[random.randint(0, len(fig.allowed_moves)-1)]
+                env.game.handle_mouse_click(fig.figure.position.x, fig.figure.position.y)
+                env.game.handle_mouse_click(move.x, move.y)
+                if env.game.backend.needs_render_selector:
+                    env.game.board.handle_figure_promotion(0, 0)
+                env.render()
+
+                if env.game.board.checked_figure:
+                    enemy_type = FieldType.clear(env.game.board.checked_figure.type)
+                    reward -= env.CHECK_PENALTIES[enemy_type]
+                done = not env.game.running
 
             # Every step we update replay memory and train main network
             agent.update_replay_memory((current_state, action, reward, new_state, done))
@@ -96,9 +161,6 @@ def main():
 
             current_state = new_state
             step += 1
-            while not env.game.is_white_turn and env.game.running:
-                env.render()
-                done = not env.game.running
 
         # Append episode reward to a list and log stats (every given number of episodes)
         ep_rewards.append(episode_reward)

@@ -76,6 +76,10 @@ class BaseDQNAgent:
         # TODO: [0] should be wrong, but could be right we only have a single output parameter :shrug:
         return self.model.predict(self.normalize(np.array(state).reshape(-1, *state.shape)))[0]
 
+    def get_target_qs(self, state):
+        # TODO: [0] should be wrong, but could be right we only have a single output parameter :shrug:
+        return self.model.predict(self.normalize(np.array(state).reshape(-1, *state.shape)))[0]
+
     def normalize(self, val):
         return val / self.env.MAX_STATE_VAL
 
@@ -92,7 +96,7 @@ class BaseDQNAgent:
         current_qs_list = np.array([self.get_qs(transition[0]) for transition in mini_batch])
 
         # again scaled
-        future_qs_list = np.array([self.get_qs(transition[3]) for transition in mini_batch])
+        future_qs_list = np.array([self.get_target_qs(transition[3]) for transition in mini_batch])
 
         # features
         x = list()
