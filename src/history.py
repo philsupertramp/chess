@@ -127,3 +127,9 @@ class TurnHistory:
     def save(self, filename):
         with open(filename, 'w') as file:
             file.write(self.data)
+
+    def __str__(self) -> str:
+        out = ''
+        for index, elem in enumerate(self.data.split('\n')):
+            out += f'{1 + index}. {elem}'
+        return out

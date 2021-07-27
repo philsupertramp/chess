@@ -48,8 +48,9 @@ class PygameBackend(BaseBackend):
         """
         screen.fill((255, 255, 255))
         self.game.board.draw()
-        text = f'{"Whites" if self.game.is_white_turn else "Blacks"} turn'
-        screen.draw_text(text, (screen.get_width() / 2, screen.get_height() - 15))
+        text = f'{"Whites" if self.game.is_white_turn else "Blacks"} turn {self.game.history}'
+
+        screen.draw_text(text, (50, screen.get_height() - 15))
         if self.needs_render_selector:
             self.figure_selector.render(self.game.is_white_turn)
         pygame.display.flip()

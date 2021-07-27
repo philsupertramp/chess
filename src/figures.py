@@ -75,7 +75,7 @@ class Pawn(Figure):
 
         # left
         if -1 < self.position.x + self.direction < 8 and -1 < self.position.y - self.direction < 8:
-            pos = Coords(self.position.x + self.direction, self.position.y + self.direction)
+            pos = Coords(self.position.x + self.direction, self.position.y - self.direction)
             fig = self.board.fields[pos.row][pos.col]
             if fig:
                 if fig.is_white != self.is_white:
