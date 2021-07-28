@@ -7,6 +7,9 @@ from src.history import TurnHistory
 
 
 class Game:
+    # TODO:
+    #      - Integrate `ml/main`
+    #      - implement interface as painted...
     history = TurnHistory()
 
     is_mouse_clicked = False

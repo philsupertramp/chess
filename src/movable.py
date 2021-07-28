@@ -75,7 +75,7 @@ class BoardState:
         """
         Helper to detect figure on given tile
         """
-        return self.board.fields[move.row][move.col]
+        return self.board.check_field(move)
 
     @staticmethod
     def clean_target_fields(fields: List[Coords]) -> List[Coords]:

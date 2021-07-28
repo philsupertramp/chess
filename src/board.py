@@ -28,6 +28,12 @@ class CheckerBoard:
 
         self.reset()
 
+    def check_field(self, move: Coords) -> Optional['Figure']:
+        """
+        Helper to detect figure on given tile
+        """
+        return self.fields[move.row][move.col]
+
     def rescale(self, canvas: 'pygame.Surface') -> None:
         self.canvas = canvas
         self.init_empty_field_texture()

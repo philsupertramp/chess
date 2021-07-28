@@ -114,7 +114,7 @@ def main():
             if np.random.random() > epsilon:
                 # Get action from Q table
                 qs = agent.get_qs(np.array(current_state))
-                action = np.unravel_index(np.argmax(qs, axis=None), qs.shape)
+                action = np.argmax(qs, axis=0)
             else:
                 # Get random action
                 action = np.random.randint(0, 7, size=4)
@@ -127,7 +127,7 @@ def main():
             # Transform new continuous state to new discrete state and count reward
             episode_reward += reward
 
-            if episode_reward < 1_000 * -env.LOSS_PENALTY:
+            if episode_reward < 10_000 * -env.LOSS_PENALTY:
                 episode_reward -= reward
                 break
 

@@ -46,7 +46,7 @@ class ModifiedTensorBoard(TensorBoard):
 
 class BaseDQNAgent:
     REPLAY_MEMORY_SIZE = 50_000
-    MIN_REPLAY_MEMORY_SIZE = 1_000
+    MIN_REPLAY_MEMORY_FILLED = 0.75
     MODEL_NAME = "256x2"
     MINI_BATCH_SIZE = 64
     DISCOUNT = 0.99
@@ -87,7 +87,7 @@ class BaseDQNAgent:
         raise NotImplementedError()
 
     def train(self, terminal_state, step):
-        if len(self.replay_memory) < self.MIN_REPLAY_MEMORY_SIZE:
+        if len(self.replay_memory) < (self.MIN_REPLAY_MEMORY_FILLED * self.REPLAY_MEMORY_SIZE):
             return
 
         mini_batch = random.sample(self.replay_memory, self.MINI_BATCH_SIZE)
@@ -130,7 +130,7 @@ class BaseDQNAgent:
             self.target_model.set_weights(self.model.get_weights())
             self.target_update_counter = 0
 
-        self.replay_memory.clear()
+        # self.replay_memory.clear()
 
 
 class QEnv:
