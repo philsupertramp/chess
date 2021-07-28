@@ -6,6 +6,7 @@ from src.backends.screen import screen
 import pygame
 
 from src.backends.base import BaseBackend
+from src.backends.sections import StatisticsSection, TurnHistorySection
 from src.backends.selector import FigureSelector
 
 
@@ -15,8 +16,10 @@ EventCallback = Callable[[Event], None]
 class PygameBackend(BaseBackend):
     def __init__(self, game):
         super().__init__(game)
-        self.canvas = pygame.Surface((screen.get_size()[0], screen.get_size()[1] - 20))
+        self.canvas = pygame.Surface((screen.get_field_width(), screen.get_field_height()))
         self.figure_selector = FigureSelector()
+        self.stats_section = StatisticsSection()
+        self.turn_history_section = TurnHistorySection()
 
     def handle_game_events(self, procedures: Optional[List[EventCallback]] = None, events=None) -> None:
         def quit_event(event):
@@ -53,10 +56,12 @@ class PygameBackend(BaseBackend):
         screen.draw_text(text, (50, screen.get_height() - 15))
         if self.needs_render_selector:
             self.figure_selector.render(self.game.is_white_turn)
+        self.stats_section.render(screen, game=self.game)
+        self.turn_history_section.render(screen, history=self.game.history)
         pygame.display.flip()
 
     def rescale(self):
-        self.canvas = pygame.Surface((screen.get_width(), screen.get_height() - 20))
+        self.canvas = pygame.Surface((screen.get_field_width(), screen.get_field_height()))
         self.figure_selector = FigureSelector()
 
     def reset(self):
@@ -71,7 +76,7 @@ class PygameBackend(BaseBackend):
         """
         self.rescale()
         self.game.board.rescale(self.canvas)
-        screen.resize_figure_font(0.5 * screen.get_width() / 8)
+        screen.resize_figure_font(0.5 * screen.get_field_width() / 8)
 
     def handle_click(self) -> None:
         """

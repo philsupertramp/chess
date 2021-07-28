@@ -9,7 +9,7 @@ class Screen:
         self.font = pygame.font.SysFont('DejaVu Sans Mono', size=16, bold=True)
         self.figure_size = 0
         self.figure_font = None
-        self.resize_figure_font(0.5 * surf.get_width() / 8)
+        self.resize_figure_font(0.35 * surf.get_width() / 8)
 
     @classmethod
     def build(cls, width, height):
@@ -64,6 +64,12 @@ class Screen:
 
     def get_width(self):
         return self.window.get_width()
+
+    def get_field_height(self):
+        return self.window.get_height() * 0.8
+
+    def get_field_width(self):
+        return self.window.get_width() * 0.7
 
 
 pygame.init()
