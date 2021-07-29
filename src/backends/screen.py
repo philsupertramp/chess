@@ -46,8 +46,8 @@ class Screen:
         text_surface = self.figure_font.render(text, False, (0, 0, 0))
         surface.blit(text_surface, position)
 
-    def draw_text_to_surface(self, text, position, surface):
-        text_surface = self.font.render(text, True, (0, 0, 0))
+    def draw_text_to_surface(self, text, position, surface, color=(0, 0, 0)):
+        text_surface = self.font.render(text, True, color)
         surface.blit(text_surface, position)
 
     def fill(self, color):

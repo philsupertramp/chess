@@ -3,7 +3,7 @@ from typing import Optional
 
 from src.board import CheckerBoard
 
-from src.history import TurnHistory
+from src.history import TurnHistory, GameHistory
 
 
 class Game:
@@ -11,6 +11,7 @@ class Game:
     #      - Integrate `ml/main`
     #      - implement interface as painted...
     history = TurnHistory()
+    game_history = GameHistory()
 
     is_mouse_clicked = False
     running = True

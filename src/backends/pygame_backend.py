@@ -19,7 +19,9 @@ class PygameBackend(BaseBackend):
         self.canvas = pygame.Surface((screen.get_field_width(), screen.get_field_height()))
         self.figure_selector = FigureSelector()
         self.stats_section = StatisticsSection()
+        self.stats_section.resize(screen)
         self.turn_history_section = TurnHistorySection()
+        self.turn_history_section.resize(screen)
 
     def handle_game_events(self, procedures: Optional[List[EventCallback]] = None, events=None) -> None:
         def quit_event(event):

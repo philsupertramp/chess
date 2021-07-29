@@ -2,6 +2,7 @@ from typing import Optional, List
 
 import pygame
 
+from src.backends.colors import BLACK, WHITE
 from src.backends.screen import Screen, screen
 from src.history import TurnHistory, Turn
 
@@ -12,37 +13,60 @@ class DisplaySection:
 
 
 class TurnHistorySection(DisplaySection):
-
+    # TODO: make scrollable
     class TurnRecord:
         def __init__(self, turn: Turn, index: int):
             self.turn = turn
             self.position = index
 
         def render(self, surface: pygame.Surface):
-            screen.draw_text_to_surface(str(self.turn), (self.position % 5, min(self.position//5, 0)), surface)
+            pos = (85 * (self.position % 10), 25 * max(self.position//10, 0))
+            screen.draw_text_to_surface(self.text, pos, surface, WHITE if self.turn.figure.is_white else BLACK)
+
+        @property
+        def text(self):
+            return f'{f"{self.position // 2 + 1}." if self.turn.figure.is_white else ""}{str(self.turn)}'
 
     def __init__(self):
         self.records: List['TurnRecord'] = list()
+        self.surface = None
+
+    def resize(self, canvas):
+        rec = canvas.get_size()
+        self.surface = pygame.Surface((rec[0], rec[1] - canvas.get_field_height() + 10))
+        self.surface.fill((50, 50, 50))
 
     def render(self, canvas: Screen, history: Optional[TurnHistory] = None, **kwargs):
-        if not history:
-            return
-        rec = canvas.get_size()
-        if self.records:
-            record_len = len(self.records)
-            self.records.extend([self.TurnRecord(turn, record_len + index) for index, turn in enumerate(history.turns[record_len - 1:])])
-        else:
-            self.records.extend([self.TurnRecord(turn, index) for index, turn in enumerate(history.turns)])
-        surface = pygame.Surface((rec[0] - canvas.get_field_width(), rec[1] - canvas.get_field_height()))
+        if history and history.turns:
+            has_changed = False
+            if len(history.turns) > len(self.records):
+                record_len = len(self.records)
+                self.records.extend([self.TurnRecord(turn, record_len + index) for index, turn in enumerate(history.turns[record_len:])])
+                has_changed = True
+            elif not self.records:
+                self.records.extend([self.TurnRecord(turn, index) for index, turn in enumerate(history.turns)])
+                has_changed = True
 
-        for record in self.records:
-            record.render(surface)
+            if has_changed:
+                self.surface.fill((50, 50, 50))
 
-        rect = (0, canvas.get_height(), canvas.get_width(), canvas.get_field_height())
-        canvas.blit(surface, surface.get_rect(center=(canvas.get_height()-(surface.get_height()/2), canvas.get_width()-(surface.get_width()/2))))
+                for record in self.records:
+                    record.render(self.surface)
+
+        canvas.blit(self.surface, (0, canvas.get_field_height() - 5))
 
 
 class StatisticsSection(DisplaySection):
+    def __init__(self):
+        self.surface = None
+
+    def resize(self, canvas):
+        rec = canvas.get_size()
+        self.surface = pygame.Surface((rec[0] - canvas.get_field_width() + 10, canvas.get_field_height() + 10))
+        self.surface.fill((50, 50, 50))
+
     def render(self, canvas, game=None, **kwargs):
-        if not game:
-            return
+        # if not game or not game.game_history.data:
+        #     return
+
+        canvas.blit(self.surface, (screen.get_field_width()-5, 0))

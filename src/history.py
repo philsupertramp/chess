@@ -1,3 +1,4 @@
+import json
 from typing import Optional, List
 
 from src.figures import FieldType, Figure
@@ -133,3 +134,14 @@ class TurnHistory:
         for index, elem in enumerate(self.data.split('\n')):
             out += f'{1 + index}. {elem}'
         return out
+
+
+class GameHistory:
+    def __init__(self):
+        self.file_name = 'history.json'
+        self.data = dict()
+        self.try_read()
+
+    def try_read(self):
+        with open(self.file_name, 'r') as file:
+            self.data = json.loads(file.read())
