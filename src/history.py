@@ -149,3 +149,7 @@ class GameHistory:
     def try_read(self):
         with open(os.path.join(PATH_NAME, '../', self.file_name), 'r') as file:
             self.data = json.loads(file.read())
+
+    def save(self):
+        with open(os.path.join(PATH_NAME, '../', self.file_name), 'w') as file:
+            file.write(json.dumps(self.data))

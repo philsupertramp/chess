@@ -102,6 +102,8 @@ def main():
         episode_reward = 0
         step = 1
 
+        env.game.game_history.data['episode'] = episode
+
         # Reset environment and get initial state
         current_state = env.reset()
 
@@ -121,6 +123,12 @@ def main():
 
             new_state, reward, done = env.step(action)
 
+            if reward == -10 * env.PLAYING_REWARD:
+                if 'misses' in env.game.game_history.data:
+                    env.game.game_history.data['misses'] += 1
+                else:
+                    env.game.game_history.data['misses'] = 1
+
             if env.game.backend.needs_render_selector:
                 env.game.board.handle_figure_promotion(0, 0)
 
@@ -130,6 +138,8 @@ def main():
             if episode_reward < 10_000 * -env.LOSS_PENALTY:
                 episode_reward -= reward
                 break
+
+            env.game.game_history.data['current_reward'] = episode_reward
 
             # if SHOW_PREVIEW:# and not episode % AGGREGATE_STATS_EVERY:
             env.render()

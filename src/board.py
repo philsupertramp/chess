@@ -243,7 +243,12 @@ class CheckerBoard:
             if self.checked_figure and self.checked_figure.checkmate():
                 self.game.backend.needs_render_selector = False
                 self.game.running = False
-                self.game.history.is_final = True
+                if not self.game.history.is_final:
+                    if is_white_turn:
+                        key = 'White'
+                    else:
+                        key = 'Black'
+                    self.game.game_history.data[key] += 1
                 print(f'Game over {"White" if is_white_turn else "Black"} wins.')
 
             if self.selected_figure.castles_with:

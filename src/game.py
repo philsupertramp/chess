@@ -60,6 +60,7 @@ class Game:
                 start = time.time()
 
         self.history.is_final = True
+        self.game_history.save()
 
     def handle_mouse_click(self, cols: int, rows: int) -> None:
         """

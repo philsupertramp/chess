@@ -59,14 +59,20 @@ class TurnHistorySection(DisplaySection):
 class StatisticsSection(DisplaySection):
     def __init__(self):
         self.surface = None
+        self.data = dict()
 
     def resize(self, canvas):
         rec = canvas.get_size()
         self.surface = pygame.Surface((rec[0] - canvas.get_field_width() + 10, canvas.get_field_height() + 10))
         self.surface.fill((50, 50, 50))
+        screen.draw_text_to_surface("Statistics", (150, 0), self.surface)
+        for index, (key, value) in enumerate(self.data.items()):
+            screen.draw_text_to_surface(f'{key}: {value}', (10, 35 * (1 + index)), self.surface)
 
     def render(self, canvas, game=None, **kwargs):
-        # if not game or not game.game_history.data:
-        #     return
+        if game and game.game_history.data:
+            if game.game_history.data != self.data:
+                self.data = game.game_history.data.copy()
+                self.resize(canvas)
 
         canvas.blit(self.surface, (screen.get_field_width()-5, 0))
