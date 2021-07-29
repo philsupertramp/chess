@@ -88,7 +88,7 @@ class PygameBackend(BaseBackend):
 
         mouse_pos = pygame.mouse.get_pos()
 
-        scale = screen.get_width() / 8, (screen.get_height() - 20) / 8
+        scale = screen.get_field_width() / 8, (screen.get_field_height()) / 8
         cols = int(mouse_pos[0] / scale[0])
         rows = int(mouse_pos[1] / scale[1])
 
