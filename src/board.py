@@ -241,6 +241,7 @@ class CheckerBoard:
             self.checked_figure = self.fields[prev_fig_pos.row][prev_fig_pos.col]
             self.selected_figure.checked_en_passant = False
             if self.checked_figure and self.checked_figure.checkmate():
+                self.game.backend.needs_render_selector = False
                 self.game.running = False
                 self.game.history.is_final = True
                 print(f'Game over {"White" if is_white_turn else "Black"} wins.')
