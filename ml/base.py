@@ -130,7 +130,7 @@ class BaseDQNAgent:
             self.target_model.set_weights(self.model.get_weights())
             self.target_update_counter = 0
 
-        # self.replay_memory.clear()
+        self.replay_memory.clear()
 
 
 class QEnv:

@@ -1,8 +1,12 @@
 import json
+import os
 from typing import Optional, List
 
 from src.figures import FieldType, Figure
 from src.helpers import sign, Coords
+
+
+PATH_NAME = os.path.dirname(__file__)
 
 
 class Turn:
@@ -143,5 +147,5 @@ class GameHistory:
         self.try_read()
 
     def try_read(self):
-        with open(self.file_name, 'r') as file:
+        with open(os.path.join(PATH_NAME, '../', self.file_name), 'r') as file:
             self.data = json.loads(file.read())
