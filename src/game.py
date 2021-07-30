@@ -77,12 +77,16 @@ class Game:
             # switch turn
             self.is_white_turn = not self.is_white_turn
 
-    def reset(self) -> None:
+    def reset(self, with_history: bool = False) -> None:
         """
         reset game state, except history
         """
         self.backend.rescale()
         self.board = CheckerBoard(self.backend.canvas, self)
+        if with_history:
+            self.history = TurnHistory()
+            if hasattr(self.backend, 'turn_history_section'):
+                self.backend.turn_history_section.reset()
 
         self.running = True
         self.is_white_turn = True

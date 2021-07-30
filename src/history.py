@@ -25,14 +25,21 @@ class Turn:
 
 
 class TurnHistory:
-    data: str = ''
-    last_move: Optional[str] = ''
-    turn: int = 0
-    turns: List[Turn] = list()
-    is_final: bool = False
-
     def __init__(self):
         self.prev_was_pawn = False
+        self.data: str = ''
+        self.last_move: Optional[str] = ''
+        self.turn: int = 0
+        self.turns: List[Turn] = list()
+        self.is_final: bool = False
+
+    def reset(self):
+        self.prev_was_pawn = False
+        self.data: str = ''
+        self.last_move: Optional[str] = ''
+        self.turn: int = 0
+        self.turns: List[Turn] = list()
+        self.is_final: bool = False
 
     @staticmethod
     def figure_to_string(figure: Figure) -> str:

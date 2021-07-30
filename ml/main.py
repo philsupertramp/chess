@@ -17,8 +17,8 @@ from environment import ChessEnvironment
 from ml.environment import TurnAction
 from src.figures import FieldType
 
-MODEL_NAME = "256x2"
-MIN_REWARD = -50_000
+MODEL_NAME = "Chess"
+MIN_REWARD = -500
 
 MEMORY_FRACTION = 0.20
 
@@ -103,12 +103,15 @@ def main():
         step = 1
 
         env.game.game_history.data['episode'] = episode
+        env.game.game_history.data['misses'] = 0
+        env.game.history.reset()
 
         # Reset environment and get initial state
         current_state = env.reset()
 
         # Reset flag and start iterating until episode ends
         done = False
+        white_won = False
         while not done:
             agent.tensorboard._test_step = step
 
@@ -119,15 +122,13 @@ def main():
                 action = np.argmax(qs, axis=0)
             else:
                 # Get random action
-                action = np.random.randint(0, 7, size=4)
+                action = np.random.randint(1, 8, size=4)
 
-            new_state, reward, done = env.step(action)
+            new_state, reward, white_won = env.step(action)
+            done = white_won
 
-            if reward == -10 * env.PLAYING_REWARD:
-                if 'misses' in env.game.game_history.data:
-                    env.game.game_history.data['misses'] += 1
-                else:
-                    env.game.game_history.data['misses'] = 1
+            if reward == -10 * env.MISSING_PENALTY:
+                env.game.game_history.data['misses'] += 1
 
             if env.game.backend.needs_render_selector:
                 env.game.board.handle_figure_promotion(0, 0)
@@ -135,7 +136,7 @@ def main():
             # Transform new continuous state to new discrete state and count reward
             episode_reward += reward
 
-            if episode_reward < 10_000 * -env.LOSS_PENALTY:
+            if episode_reward < 1_000 * -env.LOSS_PENALTY:
                 episode_reward -= reward
                 break
 
@@ -171,6 +172,11 @@ def main():
 
             current_state = new_state
             step += 1
+
+        if white_won:
+            episode_reward += 1_000 * env.LOSS_PENALTY
+
+        env.game.reset(True)
 
         # Append episode reward to a list and log stats (every given number of episodes)
         ep_rewards.append(episode_reward)

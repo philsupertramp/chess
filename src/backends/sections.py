@@ -20,7 +20,7 @@ class TurnHistorySection(DisplaySection):
             self.position = index
 
         def render(self, surface: pygame.Surface):
-            pos = (85 * (self.position % 10), 25 * max(self.position//10, 0))
+            pos = (95 * (self.position % 12), 25 * max(self.position//12, 0))
             screen.draw_text_to_surface(self.text, pos, surface, WHITE if self.turn.figure.is_white else BLACK)
 
         @property
@@ -30,6 +30,9 @@ class TurnHistorySection(DisplaySection):
     def __init__(self):
         self.records: List['TurnRecord'] = list()
         self.surface = None
+
+    def reset(self):
+        self.records = list()
 
     def resize(self, canvas):
         rec = canvas.get_size()
@@ -41,10 +44,16 @@ class TurnHistorySection(DisplaySection):
             has_changed = False
             if len(history.turns) > len(self.records):
                 record_len = len(self.records)
-                self.records.extend([self.TurnRecord(turn, record_len + index) for index, turn in enumerate(history.turns[record_len:])])
+                self.records.extend([
+                    self.TurnRecord(turn, record_len + index)
+                    for index, turn in enumerate(history.turns[record_len:])
+                ])
                 has_changed = True
             elif not self.records:
-                self.records.extend([self.TurnRecord(turn, index) for index, turn in enumerate(history.turns)])
+                self.records.extend([
+                    self.TurnRecord(turn, index)
+                    for index, turn in enumerate(history.turns)
+                ])
                 has_changed = True
 
             if has_changed:

@@ -184,6 +184,7 @@ class King(Figure):
 
     def get_castles(self) -> List[Coords]:
         rooks = self.board.get_figures(FieldType.ROOK | (FieldType.WHITE if self.is_white else FieldType.BLACK))
+        self.can_castle = rooks != []
         rooks = list(filter(lambda r: not r.has_moved and self.position.y == r.position.y, rooks))
         out = list()
         for rook in rooks:

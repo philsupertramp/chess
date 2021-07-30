@@ -42,7 +42,7 @@ class Coords:
         return Coords(self.x - other.x, self.y - other.y)
 
     def __eq__(self, other) -> bool:
-        return self.len == other.len
+        return self.len == other.len and self.x == other.x and self.y == other.y
 
     def __lt__(self, other) -> bool:
         return self.len < other.len

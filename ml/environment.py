@@ -24,18 +24,17 @@ class ChessEnvironment(QEnv):
 
     SIZE = 8
     RETURN_IMAGES = False
-    MOVE_PENALTY = 1
-    ENEMY_PENALTY = 300
-    LOSS_PENALTY = 10_000
-    PLAYING_REWARD = 300
-    ENEMY_SELECTION_PENALTY = 600
+    LOSS_PENALTY = 100
+    PLAYING_REWARD = 1
+    MISSING_PENALTY = 1
+    ENEMY_SELECTION_PENALTY = 6
     CHECK_PENALTIES = {
-        FieldType.PAWN: 100,
-        FieldType.KNIGHT: 200,
-        FieldType.BISHOP: 300,
-        FieldType.ROOK: 400,
-        FieldType.QUEEN: 500,
-        FieldType.KING: LOSS_PENALTY,
+        FieldType.PAWN: 10,
+        FieldType.KNIGHT: 20,
+        FieldType.BISHOP: 30,
+        FieldType.ROOK: 40,
+        FieldType.QUEEN: 50,
+        FieldType.KING: 25,
     }
     ACTION_SPACE_SIZE = 4
     OBSERVATION_SPACE_VALUES = (SIZE, SIZE)
@@ -85,16 +84,11 @@ class ChessEnvironment(QEnv):
                 reward -= 10 * self.PLAYING_REWARD
                 # print('Doesn\'t wanna play')
 
-        done = not self.game.running
-
-        if done:
-            reward += self.PLAYING_REWARD
-
         if self.game.board.checked_figure:
             enemy_type = FieldType.clear(self.game.board.checked_figure.type)
             reward += self.CHECK_PENALTIES[enemy_type]
 
-        return self.get_current_state(), reward, done
+        return self.get_current_state(), reward, not self.game.running
 
     def render(self):
         """
