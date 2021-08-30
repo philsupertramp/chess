@@ -1,4 +1,5 @@
 import time
+from copy import deepcopy
 from typing import Optional
 
 from src.board import CheckerBoard
@@ -17,7 +18,7 @@ class Game:
     running = True
     is_white_turn = True
 
-    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False, frame_rate: float = 0.05) -> None:
+    def __init__(self, use_pygame: bool = True, underpromoted_castling: bool = False, frame_rate: float = 0.05, skip_init: bool = False) -> None:
         """
         Main Game class maintains and holds state of chess game.
 
@@ -25,6 +26,8 @@ class Game:
         :param underpromoted_castling:
         :param frame_rate: 0.05 for 120FPS, 0.1 for 60 FPS, 0.2 for 30 FPS
         """
+        if skip_init:
+            return
         self.use_pygame = use_pygame
         self.frame_rate = frame_rate
         if self.use_pygame:
@@ -36,6 +39,19 @@ class Game:
 
         self.board = CheckerBoard(self.backend.canvas, self)
         self.underpromoted_castling = underpromoted_castling
+
+    def copy(self):
+        game = Game(skip_init=True)
+        game.use_pygame = self.use_pygame
+        game.is_white_turn = self.is_white_turn
+        game.is_mouse_clicked = self.is_mouse_clicked
+        game.game_history = self.game_history
+        game.history = self.history
+        game.frame_rate = self.frame_rate
+        game.board = self.board.copy()
+        game.backend = self.backend
+        game.underpromoted_castling = self.underpromoted_castling
+        return game
 
     @property
     def figure_selector(self) -> Optional['FigureSelector']:

@@ -8,9 +8,7 @@ from src.history import TurnHistory
 class CheckerBoard:
     fields: List[List[Optional[Figure]]] = list(list())
 
-    def __init__(self, display: Optional['pygame.Surface'], game) -> None:
-        # Game state
-        self.game = game
+    def __init__(self, display: Optional['pygame.Surface'], game, skip_init: bool = False) -> None:
         # Texture for simple rendering
         self.empty_board: Optional['pygame.Surface'] = None
         # cell height and width
@@ -18,6 +16,10 @@ class CheckerBoard:
         # pointer to currently selected figure
         self.selected_figure = None
         self.checked_figure = None
+        if skip_init:
+            return
+        # Game state
+        self.game = game
         # initial canvas
         self.canvas = display
         # actual game state
@@ -27,6 +29,15 @@ class CheckerBoard:
             self.init_empty_field_texture()
 
         self.reset()
+
+    def copy(self) -> 'CheckerBoard':
+        board = CheckerBoard(None, None, skip_init=True)
+        board.game = self.game
+        board.canvas = self.canvas
+        board.empty_board = self.empty_board
+        board.cell_size = self.cell_size
+        board.fields = self.fields.copy()
+        return board
 
     def check_field(self, move: Coords) -> Optional['Figure']:
         """
@@ -51,7 +62,7 @@ class CheckerBoard:
                     figures.append(cell)
         return figures
 
-    def reset(self) -> None:
+    def reset(self, fen_string: str = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR') -> None:
         """
         Resets board content
 
@@ -63,7 +74,7 @@ class CheckerBoard:
         self.fields = [[None for _ in range(8)] for _ in range(8)]
         self.checked_figure = None
         self.selected_figure = None
-        self.load_game_from_string('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+        self.load_game_from_string(fen_string)
 
     def reset_en_passant(self, is_white: bool) -> None:
         """
@@ -182,15 +193,16 @@ class CheckerBoard:
         from src.backends.screen import screen
         self.canvas.blit(self.empty_board, self.empty_board.get_rect())
 
-        # screen.draw_figure(FieldType.ROOK | FieldType.WHITE, (100, 100))
-        for y in range(len(self.fields)):
-            for x in range(len(self.fields[y])):
-                if not self.fields[y][x]:
-                    continue
-
-                screen.draw_figure(self.fields[y][x].type, ((.25+x) * self.cell_size[0], y * self.cell_size[1]), surface=self.canvas)
-                if self.fields[y][x].is_selected:
-                    self.fields[y][x].draw_allowed_moves(self.canvas)
+        for row in self.fields:
+            for field in filter(lambda i: i is not None, row):
+                screen.draw_figure(
+                    field.type,
+                    ((.25+field.position.x) * self.cell_size[0],
+                     field.position.y * self.cell_size[1]),
+                    surface=self.canvas
+                )
+                if field.is_selected:
+                    field.draw_allowed_moves(self.canvas)
         screen.blit(self.canvas, self.canvas.get_rect())
 
     def handle_figure_selection(self, cols: int, rows: int, is_white_turn: bool) -> None:

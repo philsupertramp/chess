@@ -26,6 +26,7 @@ class FieldType:
 class Figure(Movable):
     def __init__(self, pos: Coords, is_white: bool, _board: 'CheckerBoard'):
         self.type: int = FieldType.WHITE if is_white else FieldType.BLACK
+        self.value = 0
         self.is_white: bool = is_white
         self.is_selected = False
         self.en_passant = False
@@ -58,6 +59,7 @@ class Figure(Movable):
 class Pawn(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
+        self.value = 1
         self.type |= FieldType.PAWN
         self.direction = -1 if self.is_white else 1
 
@@ -66,16 +68,16 @@ class Pawn(Figure):
         moves = list()
 
         # right
-        if -1 < self.position.x - self.direction < 8 and -1 < self.position.y + self.direction < 8:
-            pos = Coords(self.position.x - self.direction, self.position.y + self.direction)
+        if -1 < self.position.x + self.direction < 8 and -1 < self.position.y + self.direction < 8:
+            pos = Coords(self.position.x + self.direction, self.position.y + self.direction)
             fig = self.board.fields[pos.row][pos.col]
             if fig:
                 if fig.is_white != self.is_white:
                     moves.append(pos)
 
         # left
-        if -1 < self.position.x + self.direction < 8 and -1 < self.position.y - self.direction < 8:
-            pos = Coords(self.position.x + self.direction, self.position.y + self.direction)
+        if -1 < self.position.x - self.direction < 8 and -1 < self.position.y + self.direction < 8:
+            pos = Coords(self.position.x - self.direction, self.position.y + self.direction)
             fig = self.board.fields[pos.row][pos.col]
             if fig:
                 if fig.is_white != self.is_white:
@@ -161,6 +163,7 @@ class Pawn(Figure):
 class Queen(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
+        self.value = 9
         self.type |= FieldType.QUEEN
 
     @property
@@ -174,6 +177,7 @@ class Queen(Figure):
 class King(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
+        self.value = 100
         self.type |= FieldType.KING
         self.can_castle = True
 
@@ -220,6 +224,7 @@ class King(Figure):
 class Rook(Figure):
     def __init__(self, pos: Coords, **kwargs) -> None:
         super().__init__(pos, **kwargs)
+        self.value = 5
         self.type |= FieldType.ROOK
 
     @property
@@ -233,6 +238,7 @@ class Rook(Figure):
 class Bishop(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
+        self.value = 3
         self.type |= FieldType.BISHOP
 
     @property
@@ -246,6 +252,7 @@ class Bishop(Figure):
 class Knight(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
+        self.value = 3
         self.type |= FieldType.KNIGHT
         self.can_jump = True
 
