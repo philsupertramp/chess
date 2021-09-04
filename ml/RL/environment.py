@@ -36,30 +36,52 @@ class ChessEnvironment(QEnv):
         FieldType.QUEEN: 50,
         FieldType.KING: 25,
     }
-    ACTION_SPACE_SIZE = 4
+    MAX_NUM_ACTIONS = 64
     OBSERVATION_SPACE_VALUES = (SIZE, SIZE)
-    MAX_STATE_VAL = FieldType.KING | FieldType.BLACK
+    MAX_STATE_VAL = 100
+    ACTION_SPACE_SIZE = (SIZE + SIZE) * MAX_NUM_ACTIONS
     episode_step: int = 0
 
     def __init__(self):
-        self.game = Game()
+        self.game = Game(frame_rate=0)
         self.state_storage = None
         self.is_white = True
         self.current_start_reward = 0
+        self.figure_map = dict()
+        self.set_figure_map()
         super().__init__()
+
+    def set_figure_map(self):
+        self.figure_map = dict()
+        i = 0
+        for row in self.game.board.fields:
+            for cell in filter(lambda x: x is not None and x.is_white == self.is_white, row):
+                self.figure_map[i] = cell
+                i = i + 1
 
     def reset(self) -> Tuple[Union[float, int], Union[float, int]]:
         """
         Resets the env state to initial (random) values.
         :return:
         """
+        heatmap = self.game.backend.stats_section.heatmap.copy()
         self.game = Game()
         self.game.history = TurnHistory()
+        self.game.backend.stats_section.heatmap = heatmap
         self.episode_step = 0
+        self.set_figure_map()
 
         return np.array(self.get_current_state())
 
-    def step(self, action: Tuple[int, int]):
+    def get_figure_by_index(self, index):
+        return self.figure_map.get(int((index - (index % 64)) / 64))
+
+    def get_figure_index(self, figure: Figure):
+        for key, value in self.figure_map.items():
+            if value == figure:
+                return key
+
+    def step(self, action: int):
         # -> Tuple[Union[np.ndarray, Tuple[Union[float, int], Union[float, int]]], Union[float, int], bool]:
         """
         Computes a step in the environment  using given action
@@ -68,12 +90,21 @@ class ChessEnvironment(QEnv):
         :return:
         """
         #
-        # reward = self.current_start_reward
-        first_click = Coords(action[0], action[1])
-        second_click = Coords(action[2], action[3])
-        self.game.handle_mouse_click(first_click.x, first_click.y)
-        if self.game.board.selected_figure:
-            self.game.handle_mouse_click(second_click.x, second_click.y)
+        reward = 0
+        self.set_figure_map()
+
+        first_click = self.get_figure_by_index(action)
+        if first_click:
+            first_click = first_click.position
+            offset = action % 64
+            second_click = Coords(offset % 8, int(offset/8))
+            self.game.handle_mouse_click(first_click.col, first_click.row)
+            if self.game.board.selected_figure:
+                self.game.handle_mouse_click(second_click.col, second_click.row)
+            else:
+                reward -= 100
+        else:
+            reward -= 200
         # else:
         #     target = self.game.board.check_field(first_click)
         #     if target and not target.is_white:
@@ -86,12 +117,11 @@ class ChessEnvironment(QEnv):
         #     enemy_type = FieldType.clear(self.game.board.checked_figure.type)
         #     reward += self.CHECK_PENALTIES[enemy_type]
 
-        reward = 0.0
-        for row in self.game.board.fields:
-            for field in filter(lambda x: x is not None, row):
-                reward = reward + field.value if field.is_white else -field.value
+        # reward = 0.0
+        # for row in self.game.board.fields:
+        #     reward = reward + sum([field.value for field in filter(lambda x: x is not None, row)])
 
-        return self.get_current_state(), reward, not self.game.running
+        return self.get_current_state(), reward, not self.game.is_white_turn
 
     def render(self):
         """

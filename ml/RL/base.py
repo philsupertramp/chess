@@ -44,16 +44,51 @@ class ModifiedTensorBoard(TensorBoard):
                 tf.summary.scalar(key, data=value, step=self._train_step)
 
 
+class QEnv:
+    SIZE = 10
+    OBSERVATION_SPACE_VALUES: Tuple[int, int, int] = (SIZE, SIZE, 3)  # 4
+    ACTION_SPACE_SIZE: int = 9
+    MAX_STATE_VAL: Union[int, float] = 0
+    episode_step: int = 0
+
+    def reset(self) -> Tuple[Union[float, int], Union[float, int]]:
+        """
+        Resets the env state to initial (random) values.
+        :return:
+        """
+        raise NotImplementedError()
+
+    def step(self, action: int) -> Tuple[Tuple[Union[float, int], Union[float, int]], Union[float, int], bool, Optional[Tuple]]:
+        """
+        Computes a step in the environment  using given action
+
+        :param action:
+        :return:
+        """
+        raise NotImplementedError()
+
+    def render(self):
+        """
+        Optional method to render the current state
+        :return:
+        """
+        pass
+
+    # FOR CNN #
+    def get_current_state(self):
+        raise NotImplementedError()
+
+
 class BaseDQNAgent:
     REPLAY_MEMORY_SIZE = 50_000
     MIN_REPLAY_MEMORY_FILLED = 0.75
-    MODEL_NAME = "256x2"
+    MODEL_NAME = ""
     MINI_BATCH_SIZE = 64
     DISCOUNT = 0.99
     MIN_REWARD = 0
     UPDATE_TARGET_EVERY = 5
 
-    def __init__(self, env):
+    def __init__(self, env: QEnv):
         self.env = env
 
         self.replay_memory = deque(maxlen=self.REPLAY_MEMORY_SIZE)
@@ -86,8 +121,14 @@ class BaseDQNAgent:
     def create_model(self):
         raise NotImplementedError()
 
+    def has_enough_memory(self):
+        result = len(self.replay_memory) < (self.MIN_REPLAY_MEMORY_FILLED * self.REPLAY_MEMORY_SIZE)
+
+        self.env.game.game_history.data['training'] = result
+        return result
+
     def train(self, terminal_state, step):
-        if len(self.replay_memory) < (self.MIN_REPLAY_MEMORY_FILLED * self.REPLAY_MEMORY_SIZE):
+        if self.has_enough_memory:
             return
 
         mini_batch = random.sample(self.replay_memory, self.MINI_BATCH_SIZE)
@@ -131,39 +172,3 @@ class BaseDQNAgent:
             self.target_update_counter = 0
 
         self.replay_memory.clear()
-
-
-class QEnv:
-    SIZE = 10
-    OBSERVATION_SPACE_VALUES: Tuple[int, int, int] = (SIZE, SIZE, 3)  # 4
-    ACTION_SPACE_SIZE: int = 9
-    MAX_STATE_VAL: Union[int, float] = 0
-    episode_step: int = 0
-    # define rewards/penalties as constants
-
-    def reset(self) -> Tuple[Union[float, int], Union[float, int]]:
-        """
-        Resets the env state to initial (random) values.
-        :return:
-        """
-        raise NotImplementedError()
-
-    def step(self, action: int) -> Tuple[Tuple[Union[float, int], Union[float, int]], Union[float, int], bool, Optional[Tuple]]:
-        """
-        Computes a step in the environment  using given action
-
-        :param action:
-        :return:
-        """
-        raise NotImplementedError()
-
-    def render(self):
-        """
-        Optional method to render the current state
-        :return:
-        """
-        pass
-
-    # FOR CNN #
-    def get_current_state(self):
-        raise NotImplementedError()

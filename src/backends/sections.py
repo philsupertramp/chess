@@ -69,14 +69,22 @@ class StatisticsSection(DisplaySection):
     def __init__(self):
         self.surface = None
         self.data = dict()
+        self.heatmap = {i: 0 for i in range(64)}
 
     def resize(self, canvas):
         rec = canvas.get_size()
         self.surface = pygame.Surface((rec[0] - canvas.get_field_width() + 10, canvas.get_field_height() + 10))
         self.surface.fill((50, 50, 50))
         screen.draw_text_to_surface("Statistics", (150, 0), self.surface)
+        y = 0.
         for index, (key, value) in enumerate(self.data.items()):
-            screen.draw_text_to_surface(f'{key}: {value}', (10, 35 * (1 + index)), self.surface)
+            y = 35 * (1 + index)
+            screen.draw_text_to_surface(f'{key}: {value}', (10, y), self.surface)
+
+        y = y + 35
+        max_val = max(self.heatmap.values())
+        for field, value in self.heatmap.items():
+            screen.draw_text_to_surface(str(value), (10 + 35 * (int(field / 8)), y + 35 * (field%8)), self.surface, color=(value / max_val * 255 if max_val > 0 else 0, 0, 0, 255))
 
     def render(self, canvas, game=None, **kwargs):
         if game and game.game_history.data:

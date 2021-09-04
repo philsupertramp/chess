@@ -4,6 +4,28 @@ from src.helpers import sign, Coords
 from src.movable import Movable
 
 
+"""
+|  FieldType | Value |
+| ---------- | ----- |
+|      0     |   0   |
+| ---------- | ----- |
+|      9     |    1  |
+|     10     |    3  |
+|     11     |    3  |
+|     12     |    5  |
+|     13     |    9  |
+|     14     |  100  |
+| ---------- | ----- |
+|     17     |    1  |
+|     18     |    3  |
+|     19     |    3  |
+|     20     |    5  |
+|     21     |    9  |
+|     22     |  100  |
+| ---------- | ----- |
+"""
+
+
 class FieldType:
     EMPTY = 0
     PAWN = 1
@@ -59,7 +81,7 @@ class Figure(Movable):
 class Pawn(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
-        self.value = 1
+        self.value = 1 if self.is_white else -1
         self.type |= FieldType.PAWN
         self.direction = -1 if self.is_white else 1
 
@@ -163,7 +185,7 @@ class Pawn(Figure):
 class Queen(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
-        self.value = 9
+        self.value = 9 if self.is_white else -9
         self.type |= FieldType.QUEEN
 
     @property
@@ -177,7 +199,7 @@ class Queen(Figure):
 class King(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
-        self.value = 100
+        self.value = 100 if self.is_white else -100
         self.type |= FieldType.KING
         self.can_castle = True
 
@@ -224,7 +246,7 @@ class King(Figure):
 class Rook(Figure):
     def __init__(self, pos: Coords, **kwargs) -> None:
         super().__init__(pos, **kwargs)
-        self.value = 5
+        self.value = 5 if self.is_white else -5
         self.type |= FieldType.ROOK
 
     @property
@@ -238,7 +260,7 @@ class Rook(Figure):
 class Bishop(Figure):
     def __init__(self, pos, **kwargs):
         super().__init__(pos, **kwargs)
-        self.value = 3
+        self.value = 3 if self.is_white else -3
         self.type |= FieldType.BISHOP
 
     @property
@@ -252,7 +274,7 @@ class Bishop(Figure):
 class Knight(Figure):
     def __init__(self, pos: Coords, **kwargs):
         super().__init__(pos, **kwargs)
-        self.value = 3
+        self.value = 3 if self.is_white else -3
         self.type |= FieldType.KNIGHT
         self.can_jump = True
 
