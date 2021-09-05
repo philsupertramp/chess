@@ -9,6 +9,9 @@ import random
 
 
 # Own Tensorboard class
+from src.helpers import Coords
+
+
 class ModifiedTensorBoard(TensorBoard):
 
     # Overloaded init to set initial step and writer (we want one log file for all .fit() calls)
@@ -80,13 +83,13 @@ class QEnv:
 
 
 class BaseDQNAgent:
-    REPLAY_MEMORY_SIZE = 50_000
-    MIN_REPLAY_MEMORY_FILLED = 0.75
+    REPLAY_MEMORY_SIZE = 5_000_000
+    MIN_REPLAY_MEMORY_FILLED = 0.01
     MODEL_NAME = ""
-    MINI_BATCH_SIZE = 64
+    MINI_BATCH_SIZE = 32
     DISCOUNT = 0.99
     MIN_REWARD = 0
-    UPDATE_TARGET_EVERY = 5
+    UPDATE_TARGET_EVERY = 100
 
     def __init__(self, env: QEnv):
         self.env = env
@@ -109,11 +112,11 @@ class BaseDQNAgent:
 
     def get_qs(self, state):
         # TODO: [0] should be wrong, but could be right we only have a single output parameter :shrug:
-        return self.model.predict(self.normalize(np.array(state).reshape(-1, *state.shape)))[0]
+        return self.model.predict(self.normalize(state))[0]
 
     def get_target_qs(self, state):
         # TODO: [0] should be wrong, but could be right we only have a single output parameter :shrug:
-        return self.model.predict(self.normalize(np.array(state).reshape(-1, *state.shape)))[0]
+        return self.target_model.predict(self.normalize(state))[0]
 
     def normalize(self, val):
         return val / self.env.MAX_STATE_VAL
@@ -122,13 +125,13 @@ class BaseDQNAgent:
         raise NotImplementedError()
 
     def has_enough_memory(self):
-        result = len(self.replay_memory) < (self.MIN_REPLAY_MEMORY_FILLED * self.REPLAY_MEMORY_SIZE)
+        result = len(self.replay_memory) >= (self.MIN_REPLAY_MEMORY_FILLED * self.REPLAY_MEMORY_SIZE)
 
         self.env.game.game_history.data['training'] = result
         return result
 
     def train(self, terminal_state, step):
-        if self.has_enough_memory:
+        if not self.has_enough_memory():
             return
 
         mini_batch = random.sample(self.replay_memory, self.MINI_BATCH_SIZE)
@@ -160,8 +163,14 @@ class BaseDQNAgent:
             x.append(current_state)
             y.append(current_qs)
 
-        self.model.fit(self.normalize(np.array(x)), np.array(y), batch_size=self.MINI_BATCH_SIZE, verbose=0, shuffle=False,
-                       callbacks=[self.tensorboard] if terminal_state else None)
+        self.model.fit(
+            self.normalize(np.array(x)),
+            np.array(y).reshape(self.MINI_BATCH_SIZE, 1, 16 * 64),
+            batch_size=self.MINI_BATCH_SIZE,
+            verbose=0,
+            shuffle=False,
+            callbacks=[self.tensorboard] if terminal_state else None
+        )
 
         # updating to determine if we want to update target_model yet
         if terminal_state:

@@ -3,8 +3,8 @@ from typing import List
 
 import numpy as np
 
-import plaidml.keras
-plaidml.keras.install_backend()
+# import plaidml.keras
+# plaidml.keras.install_backend()
 
 import tensorflow as tf
 from tqdm import tqdm
@@ -14,15 +14,14 @@ import random
 
 from agent import ChessAgent
 from environment import ChessEnvironment, TurnAction
-from src.figures import FieldType
 
 MODEL_NAME = "Chess"
 MIN_REWARD = 1200
 
-MEMORY_FRACTION = 0.20
+MEMORY_FRACTION = 0.75
 
 # Environment settings
-EPISODES = 20_000
+EPISODES = 200_000
 # EPISODES = 5
 # Exploration settings
 EPSILON_DECAY = 0.99975
@@ -144,7 +143,6 @@ def main():
         # Reset flag and start iterating until episode ends
         done = False
         white_won = False
-        done_list: List[bool] = list()
         while not done:
             agent.tensorboard._test_step = step
             was_ml = False
@@ -165,8 +163,7 @@ def main():
                 action = env.get_figure_index(action[0]) * 64 + action[1].row * 8 + action[1].col
 
             new_state, reward, white_won = env.step(action)
-            done_list.append(white_won)
-            done = sum(done_list) == 150
+            done = white_won
 
             if was_ml:
                 if env.game.is_white_turn:

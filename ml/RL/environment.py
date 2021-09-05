@@ -65,13 +65,13 @@ class ChessEnvironment(QEnv):
         :return:
         """
         heatmap = self.game.backend.stats_section.heatmap.copy()
-        self.game = Game()
+        self.game = Game(frame_rate=0)
         self.game.history = TurnHistory()
         self.game.backend.stats_section.heatmap = heatmap
         self.episode_step = 0
         self.set_figure_map()
 
-        return np.array(self.get_current_state())
+        return self.get_current_state()
 
     def get_figure_by_index(self, index):
         return self.figure_map.get(int((index - (index % 64)) / 64))
@@ -118,10 +118,10 @@ class ChessEnvironment(QEnv):
         #     reward += self.CHECK_PENALTIES[enemy_type]
 
         # reward = 0.0
-        # for row in self.game.board.fields:
-        #     reward = reward + sum([field.value for field in filter(lambda x: x is not None, row)])
+        for row in self.game.board.fields:
+            reward = reward + sum([field.value for field in filter(lambda x: x is not None, row)])
 
-        return self.get_current_state(), reward, not self.game.is_white_turn
+        return self.get_current_state(), reward, not self.game.running
 
     def render(self):
         """
